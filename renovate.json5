@@ -24,15 +24,5 @@
       ],
       versioningTemplate: 'semver-coerced',
     },
-    {
-      customType: 'regex',
-      description: 'Update python-version in workflow YAML',
-      managerFilePatterns: ['/^\.github/workflows/.+\.ya?ml$/'],
-      matchStrings: [
-        '#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\n\\s+python-version:\\s*[\'"]?(?<currentValue>[^\\s\'"#]+)[\'"]?',
-      ],
-      extractVersionTemplate: '^(?<version>\\d+\\.\\d+\\.\\d+)(?:-\\d+)?$',
-      versioningTemplate: 'semver-coerced',
-    },
   ],
 }
