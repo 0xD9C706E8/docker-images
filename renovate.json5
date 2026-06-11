@@ -31,7 +31,7 @@
       matchStrings: [
         '#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\n\\s+python-version:\\s*[\'"]?(?<currentValue>[^\\s\'"#]+)[\'"]?',
       ],
-      extractVersionTemplate: '^(?<version>\\d+\\.\\d+\\.\\d+)',
+      extractVersionTemplate: '^(?<version>\\d+\\.\\d+\\.\\d+)(?:-\\d+)?$',
       versioningTemplate: 'semver-coerced',
     },
   ],
