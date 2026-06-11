@@ -1,0 +1,64 @@
+# docker-images
+
+Homelab container-image monorepo. Dockerfiles only, no application code, no local build artifacts.
+Images publish to `ghcr.io/0xd9c706e8/<app>`. Repo uses git config `0xD9C706E8`; for any `gh` CLI call use `GH_TOKEN=$(gh auth token) gh ...`.
+
+## Layout
+
+- `images/<app>/Dockerfile`: one directory per image. Directory name **is** the GHCR package name (workflow derives it from `basename`). Renaming a dir renames the published image.
+- `images/<app>/rootfs/`: optional, copied into image via `COPY rootfs /` for images that need to ship config files.
+- `.github/workflows/build.yaml`: push to `main` + scheduled + manual dispatch.
+- `.github/workflows/ci.yaml`: PR validation, no push.
+- `renovate.json5`: single source of truth for all version updates.
+
+## Local dev
+
+```bash
+docker build -t <app> images/<app>/
+docker run --rm <app>
+```
+
+No tests. Validation is "does it build, does it start". Local Docker without `buildx` will fail on multi-stage cross-platform `COPY --from`. CI runs `docker/setup-buildx-action` so this always works in CI.
+
+## Local tooling
+
+Linters and formatters run via [pre-commit](https://pre-commit.com). One-time setup:
+
+```bash
+brew install pre-commit shfmt yamllint shellcheck
+pre-commit install
+```
+
+After that every `git commit` runs the full check + auto-format suite locally. CI mirrors the same hooks via `pre-commit/action` in `ci.yaml`'s `lint` job, so nothing slips through if a contributor skips the local install.
+
+Configs live at the repo root: `.pre-commit-config.yaml`, `.prettierrc.json`, `.yamllint.yaml`, `.hadolint.yaml`.
+
+## Workflow fan-out semantics (non-obvious)
+
+`build.yaml` matrix is built in the `detect` job:
+
+- `workflow_dispatch` with `image` input → that image only
+- `schedule` (Sunday 04:00 UTC) → all images
+- `workflow_dispatch` without input → all images
+- push to `main`: if `build.yaml` itself changed → all images; otherwise only images with changes in `git diff HEAD~1`
+
+`ci.yaml` uses `git diff origin/<base>...HEAD` (three-dot) and rebuilds all images when either workflow file changed.
+
+Both workflows derive the image set from `ls -d images/* | xargs basename`. Anything you put under `images/` becomes a build target. There is no allowlist.
+
+Trivy scan runs after push but is informational only (`exit-code: "0"`). Do not promote it to blocking without checking what HIGH/CRITICAL findings exist on current images.
+
+## Renovate (read carefully before editing)
+
+The single `customManagers` entry matches `# renovate: datasource=X depName=Y` immediately above `ARG *_VERSION=` in any Dockerfile under `images/`. The annotation must include both `datasource=` and `depName=`; the values can be any Renovate-recognized datasource (`github-releases`, `docker`, etc.).
+
+Image-specific Renovate config (custom datasources, additional managers for non-standard ARG patterns, multi-line checksum-aware updates) lands as part of the PR that introduces the image.
+
+## Hard rules
+
+- Registry is always `ghcr.io`. Never Docker Hub.
+- Default `permissions: contents: read` at workflow level. Jobs that need more (publish, packages: write) declare it locally.
+- All `uses:` action references pinned by commit SHA with a `# vN` trailing comment. Never bare tags.
+- `provenance: false` on `docker/build-push-action`. Keep it.
+- No `VOLUME` directives. K8s PVC mounts handle this declaratively in downstream manifests.
+- Tags published: `:1`, `:1.2`, `:1.2.3`, `:latest`. Renovate downstream pins by digest.

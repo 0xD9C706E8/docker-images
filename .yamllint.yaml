@@ -1,0 +1,12 @@
+# yamllint config: lenient on line length (GitHub Actions YAML often >120 chars),
+# strict on indentation, comments, and key duplicates.
+extends: default
+
+rules:
+  line-length: disable
+  document-start: disable
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    # GitHub Actions uses `on:` as a key; yamllint flags it as a boolean by default.
+    check-keys: false

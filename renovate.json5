@@ -1,0 +1,36 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:recommended',
+    'docker:enableMajor',
+    ':disableRateLimiting',
+    ':dependencyDashboard',
+    ':semanticCommits',
+  ],
+  automerge: true,
+  automergeType: 'pr',
+  'pre-commit': {
+    enabled: true,
+  },
+  customManagers: [
+    {
+      customType: 'regex',
+      description: 'Update version ARGs in Dockerfiles',
+      managerFilePatterns: ['/(^|/)Dockerfile$/'],
+      matchStrings: [
+        '#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\n(?:.*\\n)*?ARG\\s+\\w+_VERSION=(?<currentValue>[^\\s]+)',
+      ],
+      versioningTemplate: 'semver-coerced',
+    },
+    {
+      customType: 'regex',
+      description: 'Update python-version in workflow YAML',
+      managerFilePatterns: ['/^\.github/workflows/.+\.ya?ml$/'],
+      matchStrings: [
+        '#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\n\\s+python-version:\\s*[\'"]?(?<currentValue>[^\\s\'"#]+)[\'"]?',
+      ],
+      extractVersionTemplate: '^(?<version>\\d+\\.\\d+\\.\\d+)',
+      versioningTemplate: 'semver-coerced',
+    },
+  ],
+}

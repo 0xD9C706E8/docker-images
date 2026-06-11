@@ -1,0 +1,9 @@
+# hadolint config: relax rules that conflict with our Renovate-managed ARG patterns
+# and our intentional choice to use specific ARG-driven tags.
+
+ignored:
+  # DL3008: pin apt versions. Renovate doesn't manage transitive apt versions;
+  # pinning by hand drifts faster than it helps for a homelab.
+  - DL3008
+  # DL3018: pin apk versions. Same reasoning as DL3008.
+  - DL3018

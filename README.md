@@ -1,0 +1,39 @@
+# docker-images
+
+Custom container images for my homelab. Rootless where possible, distroless where it makes sense, automated end to end.
+
+[![Build](https://github.com/0xD9C706E8/docker-images/actions/workflows/build.yaml/badge.svg)](https://github.com/0xD9C706E8/docker-images/actions/workflows/build.yaml)
+[![CI](https://github.com/0xD9C706E8/docker-images/actions/workflows/ci.yaml/badge.svg)](https://github.com/0xD9C706E8/docker-images/actions/workflows/ci.yaml)
+[![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen)](https://docs.renovatebot.com/)
+
+This repo bakes opinionated containers for the apps I actually run at home. Nothing fancy under the hood, just Dockerfiles, GitHub Actions, and Renovate doing the heavy lifting. If any of these images happens to fit your homelab too, help yourself.
+
+## What I optimized for
+
+A few things I cared about that you might too.
+
+**Smallest sane base image.** Go-only apps go to `gcr.io/distroless/static-debian12:nonroot`. Anything that needs glibc, Python, PHP, or a real init goes to a slim Debian or Alpine. No "ubuntu:latest with build tools left in" surprises.
+
+**Rootless by default.** Every image runs as a non-root UID. Distroless ones are `nonroot` (65534). Everything else explicitly creates UID 1000:1000 with `/usr/sbin/nologin`. No image starts as root and `USER` switches mid-build.
+
+**Pure-Go SQLite where the upstream allows it.** `CGO_ENABLED=0` for every Go build, using `modernc.org/sqlite` or `glebarez/go-sqlite`. That's how the distroless static images stay distroless.
+
+**Reproducible-ish.** `-ldflags "-s -w" -trimpath` for Go binaries, multi-stage builds with build-time deps stripped from the final layer. No `*-dev` packages making it into runtime images.
+
+**Automated updates.** Renovate watches every `ARG *_VERSION=` annotation and opens PRs when upstream releases. Auto-merges them too.
+
+**Pinned everything.** Every GitHub Action is pinned by commit SHA with a `# vN` trailing comment. Every base image gets digest-pinned by Renovate.
+
+**Built on every push, every Sunday, on demand.** The `build.yaml` workflow builds only the images whose Dockerfiles changed, plus a weekly full rebuild to pick up base-image security updates that didn't bump a tag. PR checks build without pushing.
+
+## Using these images
+
+Pull whichever one you want and point your manifests at it. Tags and digest pins are all on the [GHCR package page](https://github.com/0xD9C706E8?tab=packages).
+
+## Contributing
+
+PRs welcome. If something is broken, an upstream changed shape, or you spotted a security issue, open an issue or send a PR and I will have a look :eyes:
+
+## Caveats
+
+These images are tuned for my K8s cluster. They run rootless, expect K8s-style mounts (no `VOLUME` directives), and assume a few things about networking that may not match your setup. Use at your own risk and read the Dockerfile before pulling :see_no_evil:
