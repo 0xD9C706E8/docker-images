@@ -9,6 +9,8 @@
   ],
   automerge: true,
   automergeType: 'pr',
+  minimumReleaseAge: '1 day',
+  internalChecksFilter: 'strict',
   'pre-commit': {
     enabled: true,
   },
