@@ -1,4 +1,4 @@
-name: Reusable image build
+name: Image build
 
 on:
   workflow_call:
@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  image:
     runs-on: ubuntu-latest
     permissions:
       contents: read
