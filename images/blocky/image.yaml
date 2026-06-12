@@ -1,0 +1,2 @@
+upstream: https://github.com/0xERR0R/blocky
+base: distroless static
