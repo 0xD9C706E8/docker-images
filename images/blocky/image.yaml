@@ -1,2 +1,4 @@
 upstream: https://github.com/0xERR0R/blocky
 base: distroless static
+description: Rootless DNS proxy and ad-blocker for the home network
+license: Apache-2.0

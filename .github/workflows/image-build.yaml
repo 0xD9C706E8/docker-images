@@ -23,17 +23,31 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-      - name: Resolve build platforms
+      - name: Read image metadata
         id: config
-        # images/<app>/image.yaml may declare `platforms:`. Default is amd64 + arm64.
+        # images/<app>/image.yaml drives platforms + OCI annotations.
+        # Defaults: platforms = amd64+arm64; description/license empty.
         run: |
           config="images/${{ inputs.image }}/image.yaml"
           if [ -f "$config" ]; then
             platforms=$(yq --unwrapScalar '(.platforms // ["linux/amd64", "linux/arm64"]) | join(",")' "$config")
+            description=$(yq --unwrapScalar '.description // ""' "$config")
+            license=$(yq --unwrapScalar '.license // ""' "$config")
           else
             platforms='linux/amd64,linux/arm64'
+            description=''
+            license=''
           fi
-          echo "platforms=${platforms}" >> "$GITHUB_OUTPUT"
+          if printf '%s' "$description" | grep -q ','; then
+            echo "::error file=${config}::description must not contain commas (breaks build-push-action outputs CSV)"
+            exit 1
+          fi
+          {
+            echo "platforms=${platforms}"
+            echo "description=${description}"
+            echo "license=${license}"
+            echo "source=${{ github.server_url }}/${{ github.repository }}"
+          } >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ghcr.io
@@ -61,6 +75,16 @@ jobs:
             type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.version }}
             type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
             type=raw,value=latest
+          labels: |
+            org.opencontainers.image.source=${{ steps.config.outputs.source }}
+            org.opencontainers.image.description=${{ steps.config.outputs.description }}
+            org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
+          annotations: |
+            org.opencontainers.image.source=${{ steps.config.outputs.source }}
+            org.opencontainers.image.description=${{ steps.config.outputs.description }}
+            org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
+          flavor: |
+            annotations-level=index,manifest
       - name: Build and push
         id: build-pr
         if: inputs.mode == 'pr'
@@ -68,7 +92,7 @@ jobs:
         with:
           context: images/${{ inputs.image }}
           platforms: ${{ steps.config.outputs.platforms }}
-          outputs: type=image,name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }},push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true,annotation-index.org.opencontainers.image.source=${{ steps.config.outputs.source }},annotation-index.org.opencontainers.image.description=${{ steps.config.outputs.description }},annotation-index.org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
           cache-from: type=gha,scope=${{ inputs.image }}
           cache-to: type=gha,mode=max,scope=${{ inputs.image }}
           provenance: false
@@ -82,6 +106,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha,scope=${{ inputs.image }}
           cache-to: type=gha,mode=max,scope=${{ inputs.image }}
           provenance: false

@@ -6,9 +6,11 @@
 #   <!-- image-table:start --> ... <!-- image-table:end -->
 #
 # Defaults when keys are missing or null:
-#   platforms: linux/amd64, linux/arm64
-#   upstream:  (empty cell)
-#   base:      (empty cell)
+#   description: (empty cell)
+#   license:     (empty cell)
+#   platforms:   linux/amd64, linux/arm64
+#   upstream:    (empty cell)
+#   base:        (empty cell)
 #
 # Image directories without an image.yaml are skipped silently. That keeps
 # half-built or in-progress image dirs out of the published table.
@@ -35,12 +37,14 @@ fi
 
 render_row() {
   local config="$1"
-  local dir name upstream base platforms_raw arches link upstream_cell
+  local dir name upstream base description license platforms_raw arches link upstream_cell
 
   dir=$(dirname "$config")
   name=$(basename "$dir")
   upstream=$(yq --unwrapScalar '.upstream // ""' "$config")
   base=$(yq --unwrapScalar '.base // ""' "$config")
+  description=$(yq --unwrapScalar '.description // ""' "$config")
+  license=$(yq --unwrapScalar '.license // ""' "$config")
   platforms_raw=$(yq --unwrapScalar '(.platforms // ["linux/amd64", "linux/arm64"]) | join(",")' "$config")
 
   # Strip linux/ prefix from each platform; join with ", ".
@@ -60,13 +64,13 @@ render_row() {
     upstream_cell=""
   fi
 
-  printf '| %s | %s | %s | %s |\n' "$link" "$upstream_cell" "$base" "$arches"
+  printf '| %s | %s | %s | %s | %s | %s |\n' "$link" "$upstream_cell" "$base" "$arches" "$description" "$license"
 }
 
 table_file=$(mktemp)
 {
-  printf '| Image | Upstream | Base | Arches |\n'
-  printf '| --- | --- | --- | --- |\n'
+  printf '| Image | Upstream | Base | Arches | Description | License |\n'
+  printf '| --- | --- | --- | --- | --- | --- |\n'
   find images -mindepth 2 -maxdepth 2 -name image.yaml -type f 2> /dev/null | sort | while read -r config; do
     render_row "$config"
   done
