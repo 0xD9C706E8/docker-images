@@ -52,3 +52,9 @@ repos:
           - prettier@3.8.4
         types_or: [yaml, markdown, json]
         files: \.(ya?ml|md|json5?)$
+
+      - id: lint-renovate-annotations
+        name: lint renovate annotations
+        entry: .github/scripts/lint-renovate-annotations.sh
+        language: script
+        files: (^|/)Dockerfile$
