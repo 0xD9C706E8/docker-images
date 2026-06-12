@@ -13,9 +13,9 @@ This repo bakes opinionated containers for the apps I actually run at home. Noth
 
 <!-- prettier-ignore-start -->
 
-| Image | Upstream | Base | Arches |
-| --- | --- | --- | --- |
-| [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static | amd64, arm64 |
+| Image | Upstream | Base | Arches | Description | License |
+| --- | --- | --- | --- | --- | --- |
+| [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static | amd64, arm64 | Rootless DNS proxy and ad-blocker for the home network | Apache-2.0 |
 
 <!-- prettier-ignore-end -->
 
