@@ -29,7 +29,7 @@ jobs:
         run: |
           config="images/${{ inputs.image }}/image.yaml"
           if [ -f "$config" ]; then
-            platforms=$(yq --output-format=csv '.platforms' "$config")
+            platforms=$(yq --unwrapScalar '(.platforms // ["linux/amd64", "linux/arm64"]) | join(",")' "$config")
           else
             platforms='linux/amd64,linux/arm64'
           fi

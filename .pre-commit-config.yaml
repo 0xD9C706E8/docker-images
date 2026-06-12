@@ -58,3 +58,10 @@ repos:
         entry: .github/scripts/lint-renovate-annotations.sh
         language: script
         files: (^|/)Dockerfile$
+
+      - id: render-image-table
+        name: render image table
+        entry: .github/scripts/render-image-table.sh
+        language: script
+        files: ^(README\.md|images/.*/image\.yaml|\.github/scripts/render-image-table\.sh)$
+        pass_filenames: false

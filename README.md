@@ -3,16 +3,23 @@
 Custom container images for my homelab. Rootless where possible, distroless where it makes sense, automated end to end.
 
 [![Build](https://github.com/0xD9C706E8/docker-images/actions/workflows/build.yaml/badge.svg)](https://github.com/0xD9C706E8/docker-images/actions/workflows/build.yaml)
-[![CI](https://github.com/0xD9C706E8/docker-images/actions/workflows/ci.yaml/badge.svg)](https://github.com/0xD9C706E8/docker-images/actions/workflows/ci.yaml)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen)](https://docs.renovatebot.com/)
 
 This repo bakes opinionated containers for the apps I actually run at home. Nothing fancy under the hood, just Dockerfiles, GitHub Actions, and Renovate doing the heavy lifting. If any of these images happens to fit your homelab too, help yourself.
 
 ## What's in the box
 
-| Image                    | Upstream                                            | Base              |
-| ------------------------ | --------------------------------------------------- | ----------------- |
-| [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static |
+<!-- image-table:start -->
+
+<!-- prettier-ignore-start -->
+
+| Image | Upstream | Base | Arches |
+| --- | --- | --- | --- |
+| [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static | amd64, arm64 |
+
+<!-- prettier-ignore-end -->
+
+<!-- image-table:end -->
 
 All images publish to `ghcr.io/0xd9c706e8/<app>` and tag as `:1`, `:1.2`, `:1.2.3`, and `:latest`. My downstream K8s manifests pin by digest via Renovate, so `:latest` is convenient for browsing but not what production tracks.
 
@@ -31,6 +38,8 @@ A few things I cared about that you might too.
 **Automated updates.** Renovate watches every `ARG *_VERSION=` annotation and opens PRs when upstream releases. Auto-merges them too.
 
 **Pinned everything.** Every GitHub Action is pinned by commit SHA with a `# vN` trailing comment. Every base image gets digest-pinned by Renovate.
+
+**Multi-arch by default.** Every image builds for `linux/amd64` + `linux/arm64` and publishes a single manifest. An `image.yaml` per image directory can override the platform list when an upstream is single-arch only.
 
 **Built on every push, every Sunday, on demand.** The `build.yaml` workflow builds only the images whose Dockerfiles changed, plus a weekly full rebuild to pick up base-image security updates that didn't bump a tag. PR checks build without pushing.
 
