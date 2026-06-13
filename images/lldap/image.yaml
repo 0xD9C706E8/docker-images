@@ -1,0 +1,4 @@
+upstream: https://github.com/lldap/lldap
+base: alpine
+description: Light LDAP server backed by SQLite/MariaDB/Postgres
+license: GPL-3.0
