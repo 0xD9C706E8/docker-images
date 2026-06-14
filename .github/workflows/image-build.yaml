@@ -83,8 +83,8 @@ jobs:
             org.opencontainers.image.source=${{ steps.config.outputs.source }}
             org.opencontainers.image.description=${{ steps.config.outputs.description }}
             org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
-          flavor: |
-            annotations-level=index,manifest
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - name: Build and push
         id: build-pr
         if: inputs.mode == 'pr'
