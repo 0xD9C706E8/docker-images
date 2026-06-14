@@ -47,66 +47,8 @@ jobs:
       fail-fast: false
       matrix:
         image: ${{ fromJson(needs.detect.outputs.images) }}
-        platform:
-          - linux/amd64
-          - linux/arm64
     uses: ./.github/workflows/image-build.yaml
     with:
       image: ${{ matrix.image }}
       mode: release
-      platform: ${{ matrix.platform }}
 
-  merge:
-    needs: build
-    if: always() && needs.build.result == 'success'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
-      - name: Create multi-arch manifests
-        run: |
-          # Parse outputs from matrix build
-          images_json='${{ needs.build.outputs.image }}'
-          platforms_json='${{ needs.build.outputs.platform }}'
-          digests_json='${{ needs.build.outputs.digest }}'
-          versions_json='${{ needs.build.outputs.version }}'
-
-          # Combine into a single array of objects
-          combined=$(jq -n \
-            --argjson images "$images_json" \
-            --argjson platforms "$platforms_json" \
-            --argjson digests "$digests_json" \
-            --argjson versions "$versions_json" \
-            '[ [images, platforms, digests, versions] | transpose | .[] | {image: .[0], platform: .[1], digest: .[2], version: .[3]} ]')
-
-          # Group by image and create manifests
-          owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
-
-          echo "$combined" | jq -c 'group_by(.image)[]' | while read -r group; do
-            image=$(echo "$group" | jq -r '.[0].image')
-            version=$(echo "$group" | jq -r '.[0].version')
-            name="ghcr.io/${owner}/${image}"
-
-            # Build refs from digests
-            refs=$(echo "$group" | jq -r '.[].digest' | sed "s|^|${name}@|")
-
-            # Create version tags
-            major=$(echo "$version" | cut -d. -f1)
-            minor=$(echo "$version" | cut -d. -f1,2)
-
-            # Create manifest with all tags
-            # shellcheck disable=SC2086
-            docker buildx imagetools create \
-              -t "${name}:latest" \
-              -t "${name}:${major}" \
-              -t "${name}:${minor}" \
-              -t "${name}:${version}" \
-              $refs
-          done
