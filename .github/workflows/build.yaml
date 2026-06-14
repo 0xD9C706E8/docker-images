@@ -64,21 +64,26 @@ jobs:
       contents: read
       packages: write
     steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
-      - name: Create multi-arch manifests
+      - name: Install yq
         run: |
-          # Parse outputs from matrix build
+          wget -q https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+      - name: Create multi-arch manifests
+        env:
+          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
           images_json='${{ needs.build.outputs.image }}'
           platforms_json='${{ needs.build.outputs.platform }}'
           digests_json='${{ needs.build.outputs.digest }}'
           versions_json='${{ needs.build.outputs.version }}'
 
-          # Combine into a single array of objects
           combined=$(jq -n \
             --argjson images "$images_json" \
             --argjson platforms "$platforms_json" \
@@ -86,7 +91,6 @@ jobs:
             --argjson versions "$versions_json" \
             '[ [images, platforms, digests, versions] | transpose | .[] | {image: .[0], platform: .[1], digest: .[2], version: .[3]} ]')
 
-          # Group by image and create manifests
           owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
 
           echo "$combined" | jq -c 'group_by(.image)[]' | while read -r group; do
@@ -94,19 +98,27 @@ jobs:
             version=$(echo "$group" | jq -r '.[0].version')
             name="ghcr.io/${owner}/${image}"
 
-            # Build refs from digests
+            # Read per-image OCI metadata (description/license) for index-level annotations
+            config="images/${image}/image.yaml"
+            description=$(yq --unwrapScalar '.description // ""' "$config")
+            license=$(yq --unwrapScalar '.license // ""' "$config")
+
             refs=$(echo "$group" | jq -r '.[].digest' | sed "s|^|${name}@|")
 
-            # Create version tags
             major=$(echo "$version" | cut -d. -f1)
             minor=$(echo "$version" | cut -d. -f1,2)
 
-            # Create manifest with all tags
+            # Create manifest list with all tags + index-level OCI annotations.
+            # Index annotations live on the manifest list, not single-platform images;
+            # build-push-action cannot emit them safely from per-leg builds.
             # shellcheck disable=SC2086
             docker buildx imagetools create \
               -t "${name}:latest" \
               -t "${name}:${major}" \
               -t "${name}:${minor}" \
               -t "${name}:${version}" \
+              --annotation "index:org.opencontainers.image.source=${SOURCE_URL}" \
+              --annotation "index:org.opencontainers.image.description=${description}" \
+              --annotation "index:org.opencontainers.image.licenses=${license}" \
               $refs
           done

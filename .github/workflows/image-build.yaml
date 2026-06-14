@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       mode:
-        description: 'Build mode: pr (digest-only push, no tags) or release (semver-tagged push)'
+        description: 'Build mode: pr (per-leg digest push, surfaces pull command) or release (per-leg digest push, version output for merge job to tag)'
         required: true
         type: string
       platform:
@@ -59,14 +59,14 @@ jobs:
             description=''
             license=''
           fi
+          if [ -n '${{ inputs.platform }}' ]; then
+            platforms='${{ inputs.platform }}'
+          fi
           if printf '%s' "$description" | grep -q ','; then
             echo "::error file=${config}::description must not contain commas (breaks build-push-action outputs CSV)"
             exit 1
           fi
           {
-          if [ -n '${{ inputs.platform }}' ]; then
-            platforms='${{ inputs.platform }}'
-          fi
             echo "platforms=${platforms}"
             echo "description=${description}"
             echo "license=${license}"
@@ -89,59 +89,26 @@ jobs:
           raw=$(grep -oP 'ARG \w+_VERSION=\K[^\s]+' images/${{ inputs.image }}/Dockerfile | head -1)
           version=$(echo "${raw#v}" | grep -oP '^\d+\.\d+\.\d+')
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-      - uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6
-        id: meta
-        if: inputs.mode == 'release'
-        with:
-          images: ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}
-          tags: |
-            type=semver,pattern={{major}},value=${{ steps.version.outputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.version }}
-            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
-            type=raw,value=latest
-          labels: |
-            org.opencontainers.image.source=${{ steps.config.outputs.source }}
-            org.opencontainers.image.description=${{ steps.config.outputs.description }}
-            org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
-          annotations: |
-            org.opencontainers.image.source=${{ steps.config.outputs.source }}
-            org.opencontainers.image.description=${{ steps.config.outputs.description }}
-            org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
-        env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - name: Build and push
-        id: build-pr
-        if: inputs.mode == 'pr'
+        id: build
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
         with:
           context: images/${{ inputs.image }}
           platforms: ${{ steps.config.outputs.platforms }}
           outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=${{ inputs.image }}
-          cache-to: type=gha,mode=max,scope=${{ inputs.image }}
-          provenance: false
-      - name: Build and push
-        id: build-release
-        if: inputs.mode == 'release'
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
-        with:
-          context: images/${{ inputs.image }}
-          platforms: ${{ steps.config.outputs.platforms }}
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: type=gha,scope=${{ inputs.image }}
-          cache-to: type=gha,mode=max,scope=${{ inputs.image }}
+          # Manifest-level (per-image) OCI labels only. Index-level annotations belong on the
+          # multi-arch manifest list and are written by build.yaml's merge job; emitting them
+          # here breaks single-platform export with 'index annotations not supported'.
+          labels: |
+            org.opencontainers.image.source=${{ steps.config.outputs.source }}
+            org.opencontainers.image.description=${{ steps.config.outputs.description }}
+            org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
+          cache-from: type=gha,scope=${{ inputs.image }}-${{ inputs.platform }}
+          cache-to: type=gha,mode=max,scope=${{ inputs.image }}-${{ inputs.platform }}
           provenance: false
       - name: Resolve built digest
         id: digest
-        run: |
-          if [ '${{ inputs.mode }}' = 'pr' ]; then
-            echo "value=${{ steps.build-pr.outputs.digest }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "value=${{ steps.build-release.outputs.digest }}" >> "$GITHUB_OUTPUT"
-          fi
+        run: echo "value=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
       - name: Trivy scan (blocking on CRITICAL,HIGH)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         env:
