@@ -75,10 +75,14 @@ jobs:
       fail-fast: false
       matrix:
         image: ${{ fromJson(needs.detect.outputs.images) }}
+        platform:
+          - linux/amd64
+          - linux/arm64
     uses: ./.github/workflows/image-build.yaml
     with:
       image: ${{ matrix.image }}
       mode: pr
+      platform: ${{ matrix.platform }}
 
   ci-success:
     needs: [lint, detect, lint-renovate, build]
