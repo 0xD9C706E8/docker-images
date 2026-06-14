@@ -65,7 +65,9 @@ RUN --mount=type=cache,target=/app/.cargo/registry,id=cargo-registry-${TARGETARC
  && mkdir -p /app/bin \
  && cp /app/target/release/lldap /app/bin/ \
  && cp /app/target/release/lldap_migration_tool /app/bin/ \
- && cp /app/target/release/lldap_set_password /app/bin/
+ && cp /app/target/release/lldap_set_password /app/bin/ \
+ && while IFS= read -r url; do curl --silent --location --output "/app/app/static/$(basename "$url")" "$url"; done < /app/app/static/libraries.txt \
+ && while IFS= read -r url; do curl --silent --location --output "/app/app/static/fonts/$(basename "$url")" "$url"; done < /app/app/static/fonts/fonts.txt
 
 FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d
 
@@ -82,10 +84,6 @@ COPY --from=builder --chown=lldap:lldap /app/app/static app/static
 COPY --from=builder --chown=lldap:lldap /app/app/pkg app/pkg
 COPY --from=builder --chown=lldap:lldap /app/bin/lldap /app/bin/lldap_migration_tool /app/bin/lldap_set_password ./
 COPY --from=source --chown=lldap:lldap /src/lldap_config.docker_template.toml ./
-
-RUN while IFS= read -r url; do wget --quiet -P app/static "$url"; done < app/static/libraries.txt \
- && while IFS= read -r url; do wget --quiet -P app/static/fonts "$url"; done < app/static/fonts/fonts.txt \
- && chmod a+r -R .
 
 USER lldap
 
