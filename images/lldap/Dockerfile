@@ -4,7 +4,7 @@
 ARG LLDAP_VERSION=v0.6.3
 
 # renovate: datasource=github-releases depName=rustwasm/wasm-pack
-ARG WASM_PACK_VERSION=0.13.1
+ARG WASM_PACK_VERSION=0.15.0
 
 # renovate: datasource=github-releases depName=rustwasm/wasm-bindgen
 ARG WASM_BINDGEN_VERSION=0.2.120
