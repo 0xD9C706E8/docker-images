@@ -11,18 +11,39 @@ on:
         description: 'Build mode: pr (digest-only push, no tags) or release (semver-tagged push)'
         required: true
         type: string
+      platform:
+        description: 'Platform to build for (e.g. linux/amd64, linux/arm64)'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: read
 
 jobs:
   image:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.platform == 'linux/arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
     permissions:
       contents: read
       packages: write
+    outputs:
+      image: ${{ inputs.image }}
+      platform: ${{ inputs.platform }}
+      digest: ${{ steps.digest.outputs.value }}
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - name: Install yq
+        run: |
+          ARCH=$(uname -m)
+          case "$ARCH" in
+            x86_64)  YQ_ARCH="amd64" ;;
+            aarch64) YQ_ARCH="arm64" ;;
+            arm64)   YQ_ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $ARCH" && exit 1 ;;
+          esac
+          wget -q "https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_${YQ_ARCH}" -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
       - name: Read image metadata
         id: config
         # images/<app>/image.yaml drives platforms + OCI annotations.
@@ -43,6 +64,9 @@ jobs:
             exit 1
           fi
           {
+          if [ -n '${{ inputs.platform }}' ]; then
+            platforms='${{ inputs.platform }}'
+          fi
             echo "platforms=${platforms}"
             echo "description=${description}"
             echo "license=${license}"
@@ -83,8 +107,8 @@ jobs:
             org.opencontainers.image.source=${{ steps.config.outputs.source }}
             org.opencontainers.image.description=${{ steps.config.outputs.description }}
             org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
-          flavor: |
-            annotations-level=index,manifest
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - name: Build and push
         id: build-pr
         if: inputs.mode == 'pr'
@@ -92,7 +116,7 @@ jobs:
         with:
           context: images/${{ inputs.image }}
           platforms: ${{ steps.config.outputs.platforms }}
-          outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true,annotation-index.org.opencontainers.image.source=${{ steps.config.outputs.source }},annotation-index.org.opencontainers.image.description=${{ steps.config.outputs.description }},annotation-index.org.opencontainers.image.licenses=${{ steps.config.outputs.license }}
+          outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ inputs.image }}
           cache-to: type=gha,mode=max,scope=${{ inputs.image }}
           provenance: false
