@@ -29,9 +29,6 @@ RUN addgroup -g 1000 app \
         nasm \
         openssl-dev \
         perl
-
-USER root
-
 ARG WASM_PACK_VERSION
 ARG WASM_BINDGEN_VERSION
 ARG TARGETARCH
