@@ -64,7 +64,7 @@ jobs:
         with:
           context: images/${{ inputs.image }}
           platforms: ${{ inputs.platform }}
-          outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true
+          outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
           # Manifest-level (per-image) OCI labels only. Index-level annotations belong on the
           # multi-arch manifest list and are written by build.yaml's merge job; emitting them
           # here breaks single-platform export with 'index annotations not supported'.
