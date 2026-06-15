@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       mode:
-        description: 'Build mode: pr (per-leg digest push, surfaces pull command) or release (per-leg digest push, version output for merge job to tag)'
+        description: 'Build mode: pr (per-leg digest push, surfaces pull command) or release (per-leg digest push, merge job assembles manifest list)'
         required: true
         type: string
       platform:
@@ -25,11 +25,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      image: ${{ inputs.image }}
-      platform: ${{ inputs.platform }}
-      digest: ${{ steps.digest.outputs.value }}
-      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       - name: Read image metadata
@@ -60,13 +55,9 @@ jobs:
       - name: Lowercase owner
         id: owner
         run: echo "name=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-      - name: Extract version
-        id: version
-        if: inputs.mode == 'release'
-        run: |
-          raw=$(grep -oP 'ARG \w+_VERSION=\K[^\s]+' images/${{ inputs.image }}/Dockerfile | head -1)
-          version=$(echo "${raw#v}" | grep -oP '^\d+\.\d+\.\d+')
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: Slugify platform
+        id: slug
+        run: echo "value=$(echo '${{ inputs.platform }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
       - name: Build and push
         id: build
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
@@ -87,6 +78,18 @@ jobs:
       - name: Resolve built digest
         id: digest
         run: echo "value=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+      - name: Export digest as filename
+        run: |
+          mkdir -p "${RUNNER_TEMP}/digests"
+          digest='${{ steps.build.outputs.digest }}'
+          touch "${RUNNER_TEMP}/digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v5
+        with:
+          name: digests-${{ inputs.image }}-${{ steps.slug.outputs.value }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
       - name: Trivy scan (blocking on CRITICAL,HIGH)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

@@ -54,7 +54,7 @@ jobs:
       platform: ${{ matrix.platform }}
 
   merge:
-    needs: build
+    needs: [detect, build]
     if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
@@ -68,43 +68,43 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
+      - name: Download digests
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
       - name: Create multi-arch manifests
         env:
           SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+          INCLUDE: ${{ needs.detect.outputs.include }}
+          DIGESTS_DIR: ${{ runner.temp }}/digests
         run: |
-          images_json='${{ needs.build.outputs.image }}'
-          platforms_json='${{ needs.build.outputs.platform }}'
-          digests_json='${{ needs.build.outputs.digest }}'
-          versions_json='${{ needs.build.outputs.version }}'
-
-          combined=$(jq -n \
-            --argjson images "$images_json" \
-            --argjson platforms "$platforms_json" \
-            --argjson digests "$digests_json" \
-            --argjson versions "$versions_json" \
-            '[ [images, platforms, digests, versions] | transpose | .[] | {image: .[0], platform: .[1], digest: .[2], version: .[3]} ]')
-
           owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
 
-          echo "$combined" | jq -c 'group_by(.image)[]' | while read -r group; do
+          echo "$INCLUDE" | jq -c 'group_by(.image)[]' | while read -r group; do
             image=$(echo "$group" | jq -r '.[0].image')
-            version=$(echo "$group" | jq -r '.[0].version')
             name="ghcr.io/${owner}/${image}"
 
-            # Read per-image OCI metadata (description/license) for index-level annotations
+            # images/<image>/Dockerfile is the source of truth for version.
+            # ARG <APP>_VERSION=<value> with the value being a semver, optionally v-prefixed.
+            raw=$(grep -oP 'ARG \w+_VERSION=\K\S+' "images/${image}/Dockerfile" | head -1)
+            version=$(echo "${raw#v}" | grep -oP '^\d+\.\d+\.\d+')
+            major=$(echo "$version" | cut -d. -f1)
+            minor=$(echo "$version" | cut -d. -f1,2)
+
             config="images/${image}/image.yaml"
             description=$(yq --unwrapScalar '.description // ""' "$config")
             license=$(yq --unwrapScalar '.license // ""' "$config")
 
-            refs=$(echo "$group" | jq -r '.[].digest' | sed "s|^|${name}@|")
+            refs=()
+            while IFS= read -r platform; do
+              slug=$(echo "$platform" | tr '/' '-')
+              # download-artifact preserves per-artifact subdirs; one digest file per leg.
+              for digest_file in "${DIGESTS_DIR}/digests-${image}-${slug}"/*; do
+                refs+=("${name}@sha256:$(basename "$digest_file")")
+              done
+            done < <(echo "$group" | jq -r '.[].platform')
 
-            major=$(echo "$version" | cut -d. -f1)
-            minor=$(echo "$version" | cut -d. -f1,2)
-
-            # Create manifest list with all tags + index-level OCI annotations.
-            # Index annotations live on the manifest list, not single-platform images;
-            # build-push-action cannot emit them safely from per-leg builds.
-            # shellcheck disable=SC2086
             docker buildx imagetools create \
               -t "${name}:latest" \
               -t "${name}:${major}" \
@@ -113,5 +113,5 @@ jobs:
               --annotation "index:org.opencontainers.image.source=${SOURCE_URL}" \
               --annotation "index:org.opencontainers.image.description=${description}" \
               --annotation "index:org.opencontainers.image.licenses=${license}" \
-              $refs
+              "${refs[@]}"
           done
