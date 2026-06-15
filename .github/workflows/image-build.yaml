@@ -84,7 +84,7 @@ jobs:
           digest='${{ steps.build.outputs.digest }}'
           touch "${RUNNER_TEMP}/digests/${digest#sha256:}"
       - name: Upload digest
-        uses: actions/upload-artifact@de65e23aa2b7e23d713bb51fbfcb6d502f8667d8 # v5
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: digests-${{ inputs.image }}-${{ steps.slug.outputs.value }}
           path: ${{ runner.temp }}/digests/*
