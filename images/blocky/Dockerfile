@@ -5,13 +5,15 @@ ARG BLOCKY_VERSION=v0.31.0
 
 FROM golang:1.26-alpine@sha256:7a3e50096189ad57c9f9f865e7e4aa8585ed1585248513dc5cda498e2f41812c AS builder
 ARG BLOCKY_VERSION
+ARG TARGETOS
+ENV CGO_ENABLED=0 GOOS=${TARGETOS}
 
 ADD https://github.com/0xERR0R/blocky.git#${BLOCKY_VERSION} /src
 WORKDIR /src
 
 RUN go mod download
 
-RUN CGO_ENABLED=0 GOOS=linux go build \
+RUN go build \
         -tags static \
         -ldflags "-s -w \
             -X github.com/0xERR0R/blocky/util.Version=${BLOCKY_VERSION} \
