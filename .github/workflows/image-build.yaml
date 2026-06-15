@@ -13,9 +13,8 @@ on:
         type: string
       platform:
         description: 'Platform to build for (e.g. linux/amd64, linux/arm64)'
-        required: false
+        required: true
         type: string
-        default: ''
 
 permissions:
   contents: read
@@ -46,24 +45,18 @@ jobs:
           chmod +x /usr/local/bin/yq
       - name: Read image metadata
         id: config
-        # images/<app>/image.yaml drives platforms + OCI annotations.
-        # Defaults: platforms = amd64+arm64; description/license empty.
+        # images/<app>/image.yaml drives OCI annotations.
+        # Defaults: description/license empty when image.yaml is missing.
         run: |
           config="images/${{ inputs.image }}/image.yaml"
           if [ -f "$config" ]; then
-            platforms=$(yq --unwrapScalar '(.platforms // ["linux/amd64", "linux/arm64"]) | join(",")' "$config")
             description=$(yq --unwrapScalar '.description // ""' "$config")
             license=$(yq --unwrapScalar '.license // ""' "$config")
           else
-            platforms='linux/amd64,linux/arm64'
             description=''
             license=''
           fi
-          if [ -n '${{ inputs.platform }}' ]; then
-            platforms='${{ inputs.platform }}'
-          fi
           {
-            echo "platforms=${platforms}"
             echo "description=${description}"
             echo "license=${license}"
             echo "source=${{ github.server_url }}/${{ github.repository }}"
@@ -90,7 +83,7 @@ jobs:
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
         with:
           context: images/${{ inputs.image }}
-          platforms: ${{ steps.config.outputs.platforms }}
+          platforms: ${{ inputs.platform }}
           outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true
           # Manifest-level (per-image) OCI labels only. Index-level annotations belong on the
           # multi-arch manifest list and are written by build.yaml's merge job; emitting them
