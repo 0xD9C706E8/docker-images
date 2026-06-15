@@ -62,10 +62,6 @@ jobs:
           if [ -n '${{ inputs.platform }}' ]; then
             platforms='${{ inputs.platform }}'
           fi
-          if printf '%s' "$description" | grep -q ','; then
-            echo "::error file=${config}::description must not contain commas (breaks build-push-action outputs CSV)"
-            exit 1
-          fi
           {
             echo "platforms=${platforms}"
             echo "description=${description}"
