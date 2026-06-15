@@ -42,7 +42,7 @@ A few things I cared about that you might too.
 
 **Multi-arch by default.** Every image builds for `linux/amd64` + `linux/arm64` and publishes a single manifest. An `image.yaml` per image directory can override the platform list when an upstream is single-arch only.
 
-**Built on every push, every Sunday, on demand.** The `build.yaml` workflow builds only the images whose Dockerfiles changed, plus a weekly full rebuild to pick up base-image security updates that didn't bump a tag. PR checks build without pushing.
+**Built on every push, every Sunday, on demand.** The `build.yaml` workflow builds only the images whose Dockerfiles changed, plus a weekly full rebuild to pick up base-image security updates that didn't bump a tag. PR checks push by digest only — no tags, just a scannable manifest reference for Trivy and a pull command in the run summary.
 
 ## Using these images
 

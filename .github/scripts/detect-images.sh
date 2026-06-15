@@ -3,6 +3,7 @@
 #
 # Outputs are written to $GITHUB_OUTPUT and $GITHUB_STEP_SUMMARY as:
 #   images=<json array of image directory names, possibly empty>
+#   include=<json array of {image, platform} pairs, possibly empty>
 #   has-changes=<true|false>
 #
 # Inputs:
@@ -29,6 +30,24 @@ list_all_images() {
   fi
 }
 
+# Expand a JSON array of image names into a {image, platform} pair per
+# entry in each image's image.yaml platforms field. Default platforms are
+# linux/amd64 + linux/arm64 when image.yaml is missing or omits the field.
+expand_with_platforms() {
+  local images_json="$1"
+  local image platforms_json
+  echo "$images_json" | jq --raw-output '.[]' | while IFS= read -r image; do
+    config="images/${image}/image.yaml"
+    if [ -f "$config" ]; then
+      platforms_json=$(yq --output-format=json --indent=0 '.platforms // ["linux/amd64", "linux/arm64"]' "$config")
+    else
+      platforms_json='["linux/amd64", "linux/arm64"]'
+    fi
+    jq --compact-output --null-input --arg image "$image" --argjson platforms "$platforms_json" \
+      '$platforms[] | {image: $image, platform: .}'
+  done | jq --compact-output --slurp '.'
+}
+
 # Filter a newline-separated list of changed paths down to the unique image
 # directory names found under images/, returned as a JSON array. Returns []
 # when no paths match. Tolerates grep's exit-1-on-no-match under set -e.
@@ -45,7 +64,7 @@ image_dirs_from_changes() {
 
 # Build a regex that matches any of the rebuild-all trigger paths.
 # Comma-separated input -> alternation, with dots escaped.
-trigger_regex=$(echo "$rebuild_all_triggers" | tr ',' '\n' | sed 's/[.]/\\./g' | paste --serial --delimiters='|' -)
+trigger_regex=$(echo "$rebuild_all_triggers" | tr ',' '\n' | sed 's/[.]/\\./g' | paste -sd '|' -)
 
 case "$GITHUB_EVENT_NAME" in
   schedule)
@@ -86,7 +105,8 @@ case "$GITHUB_EVENT_NAME" in
     ;;
 esac
 
-if [ "$images" = "[]" ]; then
+include=$(expand_with_platforms "$images")
+if [ "$include" = "[]" ]; then
   has_changes=false
 else
   has_changes=true
@@ -94,13 +114,14 @@ fi
 
 {
   echo "images=${images}"
+  echo "include=${include}"
   echo "has-changes=${has_changes}"
 } >> "$GITHUB_OUTPUT"
 
 {
-  echo "### Detected images"
+  echo "### Detected build matrix"
   echo
   echo '```json'
-  echo "$images"
+  echo "$include"
   echo '```'
 } >> "$GITHUB_STEP_SUMMARY"
