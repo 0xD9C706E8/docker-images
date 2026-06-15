@@ -33,6 +33,12 @@ After that every `git commit` runs the full check + auto-format suite locally. C
 
 Configs live at the repo root: `.pre-commit-config.yaml`, `.prettierrc.json`, `.yamllint.yaml`, `.hadolint.yaml`.
 
+## Per-commit verification cadence
+
+- After every commit on a feature branch: `pre-commit run --all-files` (matches CI's lint job 1:1).
+- After commits that touch `images/<app>/Dockerfile`: `docker build --platform linux/arm64 images/<app>/` smoke build (drop `DOCKER_DEFAULT_PLATFORM` if exported). Verify the binary runs (`--version` or equivalent).
+- After commits that touch `.github/scripts/detect-images.sh`: probe inside `ubuntu:24.04` against every event flavour (`schedule`, `workflow_dispatch` with/without input + invalid name, `push` with workflow change/single image/zero SHA/no image, `pull_request`).
+
 ## Workflow fan-out semantics (non-obvious)
 
 `build.yaml` matrix is built in the `detect` job:
@@ -40,7 +46,7 @@ Configs live at the repo root: `.pre-commit-config.yaml`, `.prettierrc.json`, `.
 - `workflow_dispatch` with `image` input → that image only
 - `schedule` (Sunday 04:00 UTC) → all images
 - `workflow_dispatch` without input → all images
-- push to `main`: if `build.yaml` itself changed → all images; otherwise only images with changes in `git diff HEAD~1`
+- push to `main`: if `build.yaml`, `image-build.yaml`, or any script under `.github/scripts/` changed → all images; otherwise only images with changes in `git diff HEAD~1`
 
 `ci.yaml` uses `git diff origin/<base>...HEAD` (three-dot) and rebuilds all images when either workflow file changed.
 
