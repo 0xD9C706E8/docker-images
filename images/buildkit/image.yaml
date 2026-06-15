@@ -1,0 +1,4 @@
+upstream: https://github.com/moby/buildkit
+base: alpine
+description: Rootless BuildKit daemon for remote builds from in-cluster clients
+license: Apache-2.0
