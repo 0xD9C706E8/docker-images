@@ -93,8 +93,13 @@ jobs:
             minor=$(echo "$version" | cut -d. -f1,2)
 
             config="images/${image}/image.yaml"
-            description=$(yq --unwrapScalar '.description // ""' "$config")
-            license=$(yq --unwrapScalar '.license // ""' "$config")
+            if [ -f "$config" ]; then
+              description=$(yq --unwrapScalar '.description // ""' "$config")
+              license=$(yq --unwrapScalar '.license // ""' "$config")
+            else
+              description=''
+              license=''
+            fi
 
             refs=()
             while IFS= read -r platform; do
@@ -105,13 +110,15 @@ jobs:
               done
             done < <(echo "$group" | jq -r '.[].platform')
 
+            annotations=(--annotation "index:org.opencontainers.image.source=${SOURCE_URL}")
+            [ -n "$description" ] && annotations+=(--annotation "index:org.opencontainers.image.description=${description}")
+            [ -n "$license" ] && annotations+=(--annotation "index:org.opencontainers.image.licenses=${license}")
+
             docker buildx imagetools create \
               -t "${name}:latest" \
               -t "${name}:${major}" \
               -t "${name}:${minor}" \
               -t "${name}:${version}" \
-              --annotation "index:org.opencontainers.image.source=${SOURCE_URL}" \
-              --annotation "index:org.opencontainers.image.description=${description}" \
-              --annotation "index:org.opencontainers.image.licenses=${license}" \
+              "${annotations[@]}" \
               "${refs[@]}"
           done
