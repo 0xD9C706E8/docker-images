@@ -12,10 +12,7 @@ ARG WASM_BINDGEN_VERSION=0.2.120
 FROM alpine:3.21@sha256:48b0309ca019d89d40f670aa1bc06e426dc0931948452e8491e3d65087abc07d AS source
 ARG LLDAP_VERSION
 
-ADD https://github.com/lldap/lldap/archive/refs/tags/${LLDAP_VERSION}.tar.gz /tmp/lldap.tar.gz
-
-RUN mkdir -p /src \
- && tar xzf /tmp/lldap.tar.gz -C /src --strip-components=1
+ADD https://github.com/lldap/lldap.git#${LLDAP_VERSION} /src
 
 FROM rust:alpine3.21@sha256:7dba3db75b0d5861af2e5dcf5b87347411e84403b5c9835be00ef1e72e299d2a AS builder
 
