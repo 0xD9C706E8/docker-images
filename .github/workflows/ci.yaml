@@ -2,16 +2,6 @@ name: CI
 
 on:
   pull_request:
-    paths:
-      - 'images/**'
-      - '.github/workflows/*.yaml'
-      - '.github/scripts/**'
-      - '.pre-commit-config.yaml'
-      - '.prettierrc.json'
-      - '.yamllint.yaml'
-      - '.hadolint.yaml'
-      - 'renovate.json5'
-      - '.github/requirements-ci.txt'
 
 permissions:
   contents: read
