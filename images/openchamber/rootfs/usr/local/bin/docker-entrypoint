@@ -67,8 +67,10 @@ SSH_PRIVATE_KEY_PATH="${SSH_DIR}/id_ed25519"
 SSH_PUBLIC_KEY_PATH="${SSH_PRIVATE_KEY_PATH}.pub"
 
 mkdir --parents "${SSH_DIR}"
-if ! chmod 700 "${SSH_DIR}" 2> /dev/null; then
-  echo "[entrypoint] warning: cannot chmod ${SSH_DIR}, continuing with existing permissions"
+
+ssh_dir_perms=$(stat --format=%a "${SSH_DIR}" 2> /dev/null || echo "")
+if [ -n "${ssh_dir_perms}" ] && [ "${ssh_dir_perms}" != "700" ]; then
+  echo "[entrypoint] warning: ${SSH_DIR} has mode ${ssh_dir_perms}, expected 700; ssh may complain" >&2
 fi
 
 if [ ! -f "${SSH_PRIVATE_KEY_PATH}" ] || [ ! -f "${SSH_PUBLIC_KEY_PATH}" ]; then
@@ -82,12 +84,18 @@ if [ ! -f "${SSH_PRIVATE_KEY_PATH}" ] || [ ! -f "${SSH_PUBLIC_KEY_PATH}" ]; then
   fi
 fi
 
-if ! chmod 600 "${SSH_PRIVATE_KEY_PATH}" 2> /dev/null; then
-  echo "[entrypoint] warning: cannot chmod ${SSH_PRIVATE_KEY_PATH}, continuing"
+if [ -f "${SSH_PRIVATE_KEY_PATH}" ]; then
+  ssh_priv_perms=$(stat --format=%a "${SSH_PRIVATE_KEY_PATH}" 2> /dev/null || echo "")
+  if [ -n "${ssh_priv_perms}" ] && [ "${ssh_priv_perms}" != "600" ]; then
+    echo "[entrypoint] warning: ${SSH_PRIVATE_KEY_PATH} has mode ${ssh_priv_perms}, expected 600; ssh will refuse to use it" >&2
+  fi
 fi
 
-if ! chmod 644 "${SSH_PUBLIC_KEY_PATH}" 2> /dev/null; then
-  echo "[entrypoint] warning: cannot chmod ${SSH_PUBLIC_KEY_PATH}, continuing"
+if [ -f "${SSH_PUBLIC_KEY_PATH}" ]; then
+  ssh_pub_perms=$(stat --format=%a "${SSH_PUBLIC_KEY_PATH}" 2> /dev/null || echo "")
+  if [ -n "${ssh_pub_perms}" ] && [ "${ssh_pub_perms}" != "644" ]; then
+    echo "[entrypoint] warning: ${SSH_PUBLIC_KEY_PATH} has mode ${ssh_pub_perms}, expected 644" >&2
+  fi
 fi
 
 if [ -f "${SSH_PUBLIC_KEY_PATH}" ]; then
