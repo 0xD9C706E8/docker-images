@@ -14,6 +14,11 @@
 #
 # Image directories without an image.yaml are skipped silently. That keeps
 # half-built or in-progress image dirs out of the published table.
+#
+# Exit codes:
+#   0 - README already up to date.
+#   1 - README was regenerated. pre-commit re-stages the file and blocks the
+#       commit; CI's lint job re-runs the hook and fails.
 
 set -euo pipefail
 
