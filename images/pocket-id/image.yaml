@@ -1,0 +1,4 @@
+upstream: https://github.com/pocket-id/pocket-id
+base: distroless static
+description: Rootless OIDC provider with passkey authentication
+license: BSD-2-Clause
