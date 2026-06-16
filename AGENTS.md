@@ -52,7 +52,7 @@ Configs live at the repo root: `.pre-commit-config.yaml`, `.prettierrc.json`, `.
 
 Both workflows derive the image set from `ls -d images/* | xargs basename`. Anything you put under `images/` becomes a build target. There is no allowlist.
 
-Trivy scan runs after every push and PR build. It blocks on CRITICAL findings only (`exit-code: "1"`). HIGH/MEDIUM/LOW findings are surfaced as a non-blocking summary in the GitHub Actions run for visibility. Renovate keeps base images digest-pinned, so a fresh CRITICAL CVE in an upstream layer surfaces as a red Build run that demands action: bump the base image, accept the finding via Trivy ignore policy, or rework the layer. HIGH and below are tracked but don't block — Renovate's auto-bumps usually clear them within hours of upstream releases.
+Trivy scan runs after every push and PR build. It blocks on CRITICAL findings only (`exit-code: "1"`). When the gate fails, the blocking CRITICAL findings are surfaced inline in the GitHub Actions run summary so the failure is immediately actionable. Lower-severity findings are not surfaced; run `trivy image ghcr.io/0xd9c706e8/<app>@<digest>` locally against any published manifest to triage them. Renovate keeps base images digest-pinned, so a fresh CRITICAL CVE in an upstream layer surfaces as a red Build run that demands action: bump the base image, accept the finding via Trivy ignore policy, or rework the layer. HIGH and below are tracked by Renovate's auto-bumps and usually clear within hours of upstream releases.
 
 ## Renovate (read carefully before editing)
 

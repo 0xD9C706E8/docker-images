@@ -90,23 +90,6 @@ jobs:
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
-      - name: Trivy scan (full summary, non-blocking)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.digest.outputs.value }}
-          format: table
-          severity: CRITICAL,HIGH,MEDIUM
-          exit-code: '0'
-          output: trivy-summary.txt
-      - name: Surface Trivy summary
-        run: |
-          {
-            echo "### Trivy summary for \`${{ inputs.image }}\` (${{ inputs.platform }})"
-            echo
-            echo '```'
-            cat trivy-summary.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
       - name: Trivy scan (blocking on CRITICAL)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -114,7 +97,17 @@ jobs:
           format: table
           severity: CRITICAL
           exit-code: '1'
-          skip-setup-trivy: 'true'
+          output: trivy-critical.txt
+      - name: Surface CRITICAL findings on failure
+        if: failure()
+        run: |
+          {
+            echo "### Trivy CRITICAL findings for \`${{ inputs.image }}\` (${{ inputs.platform }})"
+            echo
+            echo '```'
+            cat trivy-critical.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Surface pull command
         if: inputs.mode == 'pr'
         run: |
