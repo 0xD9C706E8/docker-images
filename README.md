@@ -33,7 +33,7 @@ A few things I cared about that you might too.
 
 **Smallest sane base image.** Go-only apps go to `gcr.io/distroless/static-debian12:nonroot`. Anything that needs glibc, Python, PHP, or a real init goes to a slim Debian or Alpine. No "ubuntu:latest with build tools left in" surprises.
 
-**Rootless by default.** Every image runs as a non-root UID. Distroless ones are `nonroot` (65534). Everything else explicitly creates UID 1000:1000 with `/usr/sbin/nologin`. No image starts as root and `USER` switches mid-build.
+**Rootless by default.** Every image runs as a non-root UID. Distroless ones are `nonroot` (65532). Everything else explicitly creates UID 1000:1000 with `/usr/sbin/nologin`. No image starts as root and `USER` switches mid-build.
 
 **Pure-Go SQLite where the upstream allows it.** `CGO_ENABLED=0` for every Go build, using `modernc.org/sqlite` or `glebarez/go-sqlite`. That's how the distroless static images stay distroless.
 
