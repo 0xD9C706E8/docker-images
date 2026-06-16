@@ -20,6 +20,7 @@ This repo bakes opinionated containers for the apps I actually run at home. Noth
 | [lldap](images/lldap/) | [lldap/lldap](https://github.com/lldap/lldap) | alpine | amd64, arm64 | Light LDAP server backed by SQLite/MariaDB/Postgres | GPL-3.0 |
 | [openchamber](images/openchamber/) | [openchamber/openchamber](https://github.com/openchamber/openchamber) | oven/bun (debian) | amd64, arm64 | OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client | MIT |
 | [pocket-id](images/pocket-id/) | [pocket-id/pocket-id](https://github.com/pocket-id/pocket-id) | distroless static | amd64, arm64 | Rootless OIDC provider with passkey authentication | BSD-2-Clause |
+| [tinyauth](images/tinyauth/) | [tinyauthapp/tinyauth](https://github.com/tinyauthapp/tinyauth) | distroless static | amd64, arm64 | Rootless forward-auth and OIDC gateway for reverse proxies | AGPL-3.0 |
 
 <!-- prettier-ignore-end -->
 
