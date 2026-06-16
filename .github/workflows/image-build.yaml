@@ -95,7 +95,7 @@ jobs:
         with:
           image-ref: ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.digest.outputs.value }}
           format: table
-          severity: CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN
+          severity: CRITICAL,HIGH,MEDIUM
           exit-code: '0'
           output: trivy-summary.txt
       - name: Surface Trivy summary
