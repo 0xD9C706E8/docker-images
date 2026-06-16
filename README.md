@@ -18,7 +18,7 @@ This repo bakes opinionated containers for the apps I actually run at home. Noth
 | [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static | amd64, arm64 | Rootless DNS proxy and ad-blocker for the home network | Apache-2.0 |
 | [buildkit](images/buildkit/) | [moby/buildkit](https://github.com/moby/buildkit) | alpine | amd64, arm64 | Rootless BuildKit daemon for remote builds from in-cluster clients | Apache-2.0 |
 | [lldap](images/lldap/) | [lldap/lldap](https://github.com/lldap/lldap) | alpine | amd64, arm64 | Light LDAP server backed by SQLite/MariaDB/Postgres | GPL-3.0 |
-| [openchamber](images/openchamber/) | [btriapitsyn/openchamber](https://github.com/btriapitsyn/openchamber) | oven/bun (debian) | amd64, arm64 | OpenChamber web UI for OpenCode with mise dev toolchain and remote BuildKit client | MIT |
+| [openchamber](images/openchamber/) | [openchamber/openchamber](https://github.com/openchamber/openchamber) | oven/bun (debian) | amd64, arm64 | OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client | MIT |
 
 <!-- prettier-ignore-end -->
 

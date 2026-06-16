@@ -1,27 +1,27 @@
 # openchamber
 
-Image for [OpenChamber](https://github.com/btriapitsyn/openchamber), a web UI for the [OpenCode](https://opencode.ai) AI agent. Adds a `mise`-driven dev toolchain and a `docker buildx` remote-builder client so an OpenCode session can install per-project language runtimes on demand and build container images against an external rootless BuildKit without `--privileged` or a docker socket.
+Image for [OpenChamber](https://github.com/openchamber/openchamber), a web UI for the [OpenCode](https://opencode.ai) AI agent. Adds an `aqua`-managed CLI toolchain and a `docker buildx` remote-builder client so an OpenCode session can lazy-install ~2000 CLI tools on demand and build container images against an external rootless BuildKit without `--privileged` or a docker socket.
 
 ## Composition
 
 Multi-stage build over upstream source:
 
-- `source` stage: clones `btriapitsyn/openchamber.git` at the pinned `OPENCHAMBER_VERSION` ref.
+- `source` stage: clones `openchamber/openchamber.git` at the pinned `OPENCHAMBER_VERSION` ref.
 - `deps` stage: `bun install --frozen-lockfile --ignore-scripts` against the workspace `package.json` set, matching upstream.
 - `builder` stage: `bun run build:web` to produce the web bundle.
-- runtime stage: `oven/bun:1.3.5` with the upstream apt set, mise extracted from its GitHub release tarball, docker CLI and buildx plugin from `docker:<version>-cli`, cloudflared digest-pinned, opencode-ai installed via `npm install -g`.
+- runtime stage: `oven/bun:1.3.14-slim` with a minimal apt set, `aqua` and `aqua-registry` pulled in from dedicated build stages (alpine-based, native `ADD` for the registry), docker CLI and buildx plugin from `docker:<version>-cli`, cloudflared digest-pinned, opencode-ai installed via `npm install --global`.
 
 Four Renovate-tracked pins:
 
 - `OPENCHAMBER_VERSION` — upstream source ref (github-releases datasource).
-- `MISE_VERSION` — mise release tarball (github-releases datasource).
-- `DOCKER_VERSION` — docker CLI source stage (docker datasource).
+- `AQUA_VERSION` — aqua binary release (github-releases datasource).
+- `AQUA_REGISTRY_VERSION` — aqua-registry release providing the global package catalog (github-releases datasource).
 - `OPENCODE_AI_VERSION` — opencode-ai npm package installed globally (npm datasource).
 
 ## What ships at runtime
 
 - The OpenChamber web server bound at `:3000`.
-- `mise` for per-project toolchain resolution (`.mise.toml`, `.tool-versions`, `.nvmrc`, `.python-version`).
+- `aqua` with the standard registry pre-linked (~2000 CLI tools lazy-installed on first invocation). No per-project `aqua.yaml` required for any tool the standard registry covers.
 - `docker` CLI + `docker buildx` plugin. Daemon is external — see the BuildKit section.
 - `cloudflared` for tunnel modes (matches upstream).
 - `opencode-ai` installed globally so OpenChamber can spawn opencode sessions out of the box.
@@ -46,7 +46,7 @@ services:
       - ./data/opencode/state:/home/openchamber/.local/state/opencode
       - ./data/opencode/config:/home/openchamber/.config/opencode
       - ./data/ssh:/home/openchamber/.ssh
-      - ./data/mise:/home/openchamber/.local/share/mise
+      - ./data/aqua:/home/openchamber/.local/share/aquaproj-aqua
       - ./workspaces:/home/openchamber/workspaces
 ```
 
@@ -69,7 +69,7 @@ services:
       - ./data/opencode/state:/home/openchamber/.local/state/opencode
       - ./data/opencode/config:/home/openchamber/.config/opencode
       - ./data/ssh:/home/openchamber/.ssh
-      - ./data/mise:/home/openchamber/.local/share/mise
+      - ./data/aqua:/home/openchamber/.local/share/aquaproj-aqua
       - ./workspaces:/home/openchamber/workspaces
       - ./certs:/certs:ro
 
@@ -129,8 +129,8 @@ spec:
               mountPath: /home/openchamber/.local/state/opencode
             - name: opencode-config
               mountPath: /home/openchamber/.config/opencode
-            - name: mise-cache
-              mountPath: /home/openchamber/.local/share/mise
+            - name: aqua-cache
+              mountPath: /home/openchamber/.local/share/aquaproj-aqua
             - name: workspaces
               mountPath: /home/openchamber/workspaces
             - name: certs
@@ -147,16 +147,16 @@ spec:
 
 ## Volumes
 
-| Path                                      | Use                                                               |
-| ----------------------------------------- | ----------------------------------------------------------------- |
-| `/home/openchamber/.config/openchamber`   | OpenChamber server config + sessions                              |
-| `/home/openchamber/.local/share/opencode` | OpenCode shared state (mandatory)                                 |
-| `/home/openchamber/.local/state/opencode` | OpenCode local state                                              |
-| `/home/openchamber/.config/opencode`      | OpenCode config                                                   |
-| `/home/openchamber/.ssh`                  | SSH keys for git operations                                       |
-| `/home/openchamber/.local/share/mise`     | mise toolchain cache                                              |
-| `/home/openchamber/workspaces`            | Project worktrees                                                 |
-| `/certs` (read-only, optional)            | mTLS material for the BuildKit remote builder (`ca/cert/key.pem`) |
+| Path                                           | Use                                                               |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| `/home/openchamber/.config/openchamber`        | OpenChamber server config + sessions                              |
+| `/home/openchamber/.local/share/opencode`      | OpenCode shared state (mandatory)                                 |
+| `/home/openchamber/.local/state/opencode`      | OpenCode local state                                              |
+| `/home/openchamber/.config/opencode`           | OpenCode config                                                   |
+| `/home/openchamber/.ssh`                       | SSH keys for git operations                                       |
+| `/home/openchamber/.local/share/aquaproj-aqua` | aqua tool cache (lazy-installed CLI binaries)                     |
+| `/home/openchamber/workspaces`                 | Project worktrees                                                 |
+| `/certs` (read-only, optional)                 | mTLS material for the BuildKit remote builder (`ca/cert/key.pem`) |
 
 ## Ports
 
@@ -170,7 +170,7 @@ spec:
 | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `OPENCHAMBER_UI_PASSWORD`                    | Required when exposing the server beyond localhost. Upstream contract.                                                              |
 | `BUILDKIT_HOST`                              | When set with `/certs/{ca,cert,key}.pem` mounted, the entrypoint provisions a `buildx` remote builder pointing here.                |
-| `OPENCODE_HOST`, `OPENCODE_SKIP_START`, etc. | Upstream OpenChamber env. See [openchamber/openchamber#readme](https://github.com/btriapitsyn/openchamber#readme) for the full set. |
+| `OPENCODE_HOST`, `OPENCODE_SKIP_START`, etc. | Upstream OpenChamber env. See [openchamber/openchamber#readme](https://github.com/openchamber/openchamber#readme) for the full set. |
 
 ## Security
 
@@ -178,8 +178,15 @@ spec:
 - Cert material at `/certs/` is read-only and copied into `~/.docker/buildx/certs/remote/` with `0644`/`0600` permissions on entrypoint.
 - The entrypoint is a no-op when `BUILDKIT_HOST` is unset; image works without the remote builder for non-build sessions.
 
-## Dev toolchains via mise
+## Dev toolchains via aqua
 
-Per-project `.mise.toml` resolves Node, Python, Go, Rust, Bun, Terraform, kubectl, helm, and ~500 other tools on demand. The mise data dir at `/home/openchamber/.local/share/mise` should be a persistent volume — without it, every restart re-downloads installed toolchains.
+The image ships [aqua](https://aquaproj.github.io) wired against the [aqua-registry](https://github.com/aquaproj/aqua-registry) standard catalog. At build time, `aqua install --only-link --all` pre-creates hardlinks for every package the registry covers (~2000 CLI tools). At runtime, the first invocation of any tool downloads the registry's pinned version on demand (lazy install).
 
-Toolchains are resolved at session-bash-tool invocation time, not at image-build time. The image only pins `mise` itself; everything else is the user's project responsibility.
+What this means in practice for an OpenCode session:
+
+- `node`, `go`, `uv`, `rustup-init`, `terraform`, `kubectl`, `helm`, `gh`, `jq`, `yq`, and ~2000 other CLI tools resolve cleanly without any per-project config.
+- Python is installed via `uv` (e.g. `uv python install 3.13` or `uv run python script.py`). The image does not ship a system Python.
+- Rust is bootstrapped on first use via `rustup-init -y --no-modify-path && source ~/.cargo/env`.
+- `AQUA_DISABLE_POLICY=true` is set so lazy installs don't require interactive policy approval.
+
+The aqua cache at `/home/openchamber/.local/share/aquaproj-aqua` should be a persistent volume — without it, every restart re-downloads installed binaries. PATH order puts `~/.npm-global/bin` before aqua's bin dir, so the npm-installed `opencode-ai@${OPENCODE_AI_VERSION}` wins over aqua's `anomalyco/opencode` hardlink; that's the version that actually runs.
