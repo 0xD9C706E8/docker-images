@@ -85,7 +85,8 @@ ENV HTTP_PORT=17170
 
 EXPOSE 3890 17170
 
-HEALTHCHECK CMD ["/app/lldap", "healthcheck", "--config-file", "/data/lldap_config.toml"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD ["/app/lldap", "healthcheck", "--config-file", "/data/lldap_config.toml"]
 
 ENTRYPOINT ["/app/lldap"]
 CMD ["run", "--config-file", "/data/lldap_config.toml"]
