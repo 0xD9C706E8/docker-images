@@ -9,7 +9,7 @@ ARG WASM_PACK_VERSION=0.15.0
 # renovate: datasource=github-releases depName=rustwasm/wasm-bindgen
 ARG WASM_BINDGEN_VERSION=0.2.120
 
-FROM alpine:3.24@sha256:a2d49ea686c2adfe3c992e47dc3b5e7fa6e6b5055609400dc2acaeb241c829f4 AS source
+FROM alpine:3.24@sha256:f5064d3e5f88c467c714509f491853ab2d951932c5cad699c0cb969dcec6f3b4 AS source
 ARG LLDAP_VERSION
 
 ADD https://github.com/lldap/lldap.git#${LLDAP_VERSION} /src
@@ -63,7 +63,7 @@ RUN --mount=type=cache,target=/app/.cargo/registry,id=cargo-registry-${TARGETARC
  && while IFS= read -r url; do curl --silent --location --output "/app/app/static/$(basename "$url")" "$url"; done < /app/app/static/libraries.txt \
  && while IFS= read -r url; do curl --silent --location --output "/app/app/static/fonts/$(basename "$url")" "$url"; done < /app/app/static/fonts/fonts.txt
 
-FROM alpine:3.24@sha256:a2d49ea686c2adfe3c992e47dc3b5e7fa6e6b5055609400dc2acaeb241c829f4
+FROM alpine:3.24@sha256:f5064d3e5f88c467c714509f491853ab2d951932c5cad699c0cb969dcec6f3b4
 
 RUN addgroup -g 1000 lldap \
  && adduser -u 1000 -G lldap -D -H -s /sbin/nologin lldap \
