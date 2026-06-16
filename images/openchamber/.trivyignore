@@ -1,16 +1,13 @@
 # Trivy CRITICAL ignores for the openchamber image.
 #
-# Debian 13.4 package CVEs carried by oven/bun:1.3.14-slim plus what we add
-# via apt-get install. Marked fix_deferred/affected in debian 13.4 with no
-# fix planned in this debian branch. Revisit when oven/bun ships against a
-# newer debian release.
-CVE-2026-1525
-CVE-2026-42496
-CVE-2026-4800
-CVE-2026-8376
+# perl-base/perl-modules CVEs in debian 13.4 (carried by oven/bun:1.3.14-slim).
+# Both marked fix_deferred/affected in debian 13.4 with no fix planned in this
+# debian branch. Revisit when oven/bun ships against a newer debian release.
+CVE-2026-42496 exp:2026-08-16
+CVE-2026-8376 exp:2026-08-16
 
 # npm packages in the openchamber web vendor bundle. Pinned by upstream's
 # bun.lock; we don't own the upgrade path. Revisit when openchamber upstream
 # bumps the offending package version.
-CVE-2026-41242  # protobufjs 6.11.6 -> fixed in 7.5.5/8.0.1
-CVE-2026-9277   # shell-quote 1.8.3 -> fixed in 1.8.4
+CVE-2026-41242 exp:2026-07-16  # protobufjs 6.11.6 -> fixed in 7.5.5/8.0.1
+CVE-2026-9277 exp:2026-07-16   # shell-quote 1.8.3 -> fixed in 1.8.4

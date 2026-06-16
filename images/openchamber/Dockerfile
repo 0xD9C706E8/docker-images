@@ -1,20 +1,39 @@
-# https://github.com/btriapitsyn/openchamber
+# https://github.com/openchamber/openchamber
 
-# renovate: datasource=github-releases depName=btriapitsyn/openchamber
+# renovate: datasource=github-releases depName=openchamber/openchamber
 ARG OPENCHAMBER_VERSION=v1.13.0
 
-# renovate: datasource=github-releases depName=jdx/mise
-ARG MISE_VERSION=v2026.6.10
+# renovate: datasource=github-releases depName=aquaproj/aqua
+ARG AQUA_VERSION=v2.60.1
+
+# renovate: datasource=github-releases depName=aquaproj/aqua-registry
+ARG AQUA_REGISTRY_VERSION=v4.526.0
 
 # renovate: datasource=npm depName=opencode-ai
 ARG OPENCODE_AI_VERSION=1.17.7
 
 FROM docker:29.5.3-cli@sha256:11e1133c30f3ceb73c6bdc7dfb78b3f9ed8e8e0d1d0400e91c5ec2eb240bf2ff AS docker-cli
 
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS aqua-cli
+ARG AQUA_VERSION
+ARG TARGETARCH
+
+RUN apk add --no-cache curl tar \
+ && case "${TARGETARCH}" in \
+        amd64) AQUA_ARCH=amd64 ;; \
+        arm64) AQUA_ARCH=arm64 ;; \
+        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac \
+ && curl --silent --location --fail \
+        --output /tmp/aqua.tar.gz \
+        "https://github.com/aquaproj/aqua/releases/download/${AQUA_VERSION}/aqua_linux_${AQUA_ARCH}.tar.gz" \
+ && tar --extract --gzip --file=/tmp/aqua.tar.gz --directory=/tmp aqua \
+ && install --mode=0755 /tmp/aqua /usr/local/bin/aqua
+
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS source
 ARG OPENCHAMBER_VERSION
 
-ADD https://github.com/btriapitsyn/openchamber.git#${OPENCHAMBER_VERSION} /src
+ADD https://github.com/openchamber/openchamber.git#${OPENCHAMBER_VERSION} /src
 
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS deps
 WORKDIR /app
@@ -36,8 +55,7 @@ COPY --from=source /src ./
 RUN bun run build:web
 
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04
-ARG MISE_VERSION
-ARG TARGETARCH
+ARG AQUA_REGISTRY_VERSION
 ARG OPENCODE_AI_VERSION
 
 RUN apt-get update \
@@ -46,37 +64,23 @@ RUN apt-get update \
         ca-certificates \
         curl \
         git \
-        less \
-        nodejs \
-        npm \
+        libatomic1 \
         openssh-client \
-        python3 \
  && rm -rf /var/lib/apt/lists/*
-
-RUN case "${TARGETARCH}" in \
-        amd64) MISE_ARCH=x64 ;; \
-        arm64) MISE_ARCH=arm64 ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac \
- && curl --silent --location --fail \
-        --output /tmp/mise.tar.gz \
-        "https://github.com/jdx/mise/releases/download/${MISE_VERSION}/mise-${MISE_VERSION}-linux-${MISE_ARCH}.tar.gz" \
- && tar --extract --gzip --file=/tmp/mise.tar.gz --directory=/tmp \
- && install --mode=0755 /tmp/mise/bin/mise /usr/local/bin/mise \
- && rm -rf /tmp/mise /tmp/mise.tar.gz \
- && /usr/local/bin/mise --version
 
 COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=docker-cli /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
 
 COPY --from=cloudflare/cloudflared:2026.6.0@sha256:ba461b8aa9c042156dbd39c38657fe7431bafa063220eab8d5330a523863da9f /usr/local/bin/cloudflared /usr/local/bin/cloudflared
 
+COPY --from=aqua-cli /usr/local/bin/aqua /usr/local/bin/aqua
+ADD https://github.com/aquaproj/aqua-registry.git#${AQUA_REGISTRY_VERSION} /opt/aqua-registry
+
 RUN userdel bun \
  && groupadd --gid=1000 openchamber \
  && useradd --uid=1000 --gid=1000 --create-home --shell=/bin/bash openchamber \
  && mkdir --parents /home/openchamber/.npm-global \
-             /home/openchamber/.local/share/mise \
-             /home/openchamber/.config/mise \
+             /home/openchamber/.local/share/aquaproj-aqua \
              /home/openchamber/.docker \
              /home/openchamber/.ssh \
  && chown --recursive openchamber:openchamber /home/openchamber
@@ -86,10 +90,13 @@ WORKDIR /home/openchamber
 
 ENV HOME=/home/openchamber \
     NPM_CONFIG_PREFIX=/home/openchamber/.npm-global \
-    MISE_DATA_DIR=/home/openchamber/.local/share/mise \
-    MISE_CONFIG_DIR=/home/openchamber/.config/mise \
-    PATH=/home/openchamber/.local/share/mise/shims:/home/openchamber/.npm-global/bin:/usr/local/bin:/usr/bin:/bin \
+    AQUA_ROOT_DIR=/home/openchamber/.local/share/aquaproj-aqua \
+    AQUA_GLOBAL_CONFIG=/opt/aqua-registry/aqua-all.yaml \
+    AQUA_DISABLE_POLICY=true \
+    PATH=/home/openchamber/.npm-global/bin:/home/openchamber/.local/share/aquaproj-aqua/bin:/usr/local/bin:/usr/bin:/bin \
     NODE_ENV=production
+
+RUN aqua install --only-link --all
 
 RUN npm config set prefix /home/openchamber/.npm-global \
  && npm install --global "opencode-ai@${OPENCODE_AI_VERSION}"
