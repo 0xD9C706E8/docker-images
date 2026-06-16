@@ -90,6 +90,15 @@ jobs:
           path: ${{ runner.temp }}/digests/*
           if-no-files-found: error
           retention-days: 1
+      - name: Detect Trivy ignore file
+        id: trivyignore
+        run: |
+          path="images/${{ inputs.image }}/.trivyignore"
+          if [ -f "$path" ]; then
+            echo "path=$path" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+          fi
       - name: Trivy scan (blocking on CRITICAL)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -98,6 +107,7 @@ jobs:
           severity: CRITICAL
           exit-code: '1'
           output: trivy-critical.txt
+          trivyignores: ${{ steps.trivyignore.outputs.path }}
       - name: Surface CRITICAL findings on failure
         if: failure()
         run: |
