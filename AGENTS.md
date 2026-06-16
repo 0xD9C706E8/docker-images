@@ -56,7 +56,10 @@ Trivy scan runs after every push and PR build. It blocks on CRITICAL findings on
 
 ## Renovate (read carefully before editing)
 
-The single `customManagers` entry matches `# renovate: datasource=X depName=Y` immediately above `ARG *_VERSION=` in any Dockerfile under `images/`. The annotation must include both `datasource=` and `depName=`; the values can be any Renovate-recognized datasource (`github-releases`, `docker`, etc.).
+Two managers cover every version in this repo:
+
+- **Custom regex manager** (`customManagers` in `renovate.json5`): matches `# renovate: datasource=X depName=Y` immediately above `ARG *_VERSION=` in any Dockerfile under `images/`. The annotation must include both `datasource=` and `depName=`; the values can be any Renovate-recognized datasource (`github-releases`, `docker`, etc.).
+- **Built-in Dockerfile manager** (active via `config:best-practices`): bumps tag and digest on bare `FROM image:tag@sha256:...` lines without any annotation.
 
 Image-specific Renovate config (custom datasources, additional managers for non-standard ARG patterns, multi-line checksum-aware updates) lands as part of the PR that introduces the image.
 
