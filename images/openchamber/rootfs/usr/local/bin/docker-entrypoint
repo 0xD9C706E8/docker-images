@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Entrypoint for the openchamber image. Owns three concerns:
+#
+#   1. Provision a buildx remote builder when BUILDKIT_HOST + mTLS material are
+#      present, so the agent's `docker buildx build` can target an external
+#      rootless BuildKit without --privileged or a docker socket.
+#   2. Bootstrap an SSH key for git operations on first run, with graceful
+#      degradation when /home/openchamber/.ssh is read-only.
+#   3. Launch the openchamber web server with the right host binding and
+#      optional UI password.
+#
+# When BUILDKIT_HOST is unset, step 1 is a no-op and the image still works for
+# non-build sessions.
+
+set -euo pipefail
+
+HOME="/home/openchamber"
+
+if [ -n "${BUILDKIT_HOST:-}" ] &&
+  [ -r /certs/ca.pem ] &&
+  [ -r /certs/cert.pem ] &&
+  [ -r /certs/key.pem ]; then
+
+  builder_certs="${HOME}/.docker/buildx/certs/remote"
+  mkdir --parents "${builder_certs}"
+  install --mode=0644 /certs/ca.pem "${builder_certs}/ca.pem"
+  install --mode=0644 /certs/cert.pem "${builder_certs}/cert.pem"
+  install --mode=0600 /certs/key.pem "${builder_certs}/key.pem"
+
+  if ! docker buildx inspect remote > /dev/null 2>&1; then
+    docker buildx create \
+      --name remote \
+      --driver remote \
+      --use \
+      --bootstrap \
+      "tcp://${BUILDKIT_HOST#tcp://}" \
+      > /dev/null
+  else
+    docker buildx use remote
+  fi
+fi
+
+OPENCODE_CONFIG_DIR="${OPENCODE_CONFIG_DIR:-${HOME}/.config/opencode}"
+export OPENCODE_CONFIG_DIR
+
+# Default openchamber settings: opt out of anonymous usage reports so the app
+# does not phone home on first run. Users can flip this back in the Appearance
+# > Privacy settings UI, or by editing the file directly.
+OPENCHAMBER_DATA_DIR="${OPENCHAMBER_DATA_DIR:-${HOME}/.config/openchamber}"
+OPENCHAMBER_SETTINGS_FILE="${OPENCHAMBER_DATA_DIR}/settings.json"
+if [ ! -f "${OPENCHAMBER_SETTINGS_FILE}" ]; then
+  mkdir --parents "${OPENCHAMBER_DATA_DIR}"
+  if [ -w "${OPENCHAMBER_DATA_DIR}" ]; then
+    echo "[entrypoint] writing default openchamber settings (reportUsage=false)"
+    cat > "${OPENCHAMBER_SETTINGS_FILE}" << 'EOF'
+{
+  "reportUsage": false
+}
+EOF
+  else
+    echo "[entrypoint] warning: cannot write ${OPENCHAMBER_SETTINGS_FILE}, continuing without default config" >&2
+  fi
+fi
+
+SSH_DIR="${HOME}/.ssh"
+SSH_PRIVATE_KEY_PATH="${SSH_DIR}/id_ed25519"
+SSH_PUBLIC_KEY_PATH="${SSH_PRIVATE_KEY_PATH}.pub"
+
+mkdir --parents "${SSH_DIR}"
+if ! chmod 700 "${SSH_DIR}" 2> /dev/null; then
+  echo "[entrypoint] warning: cannot chmod ${SSH_DIR}, continuing with existing permissions"
+fi
+
+if [ ! -f "${SSH_PRIVATE_KEY_PATH}" ] || [ ! -f "${SSH_PUBLIC_KEY_PATH}" ]; then
+  if [ ! -w "${SSH_DIR}" ]; then
+    echo "[entrypoint] warning: ssh key missing and ${SSH_DIR} is not writable, continuing without SSH key" >&2
+  else
+    echo "[entrypoint] generating SSH key..."
+    if ! ssh-keygen -t ed25519 -N "" -f "${SSH_PRIVATE_KEY_PATH}" > /dev/null 2>&1; then
+      echo "[entrypoint] warning: failed to generate SSH key, continuing without SSH key" >&2
+    fi
+  fi
+fi
+
+if ! chmod 600 "${SSH_PRIVATE_KEY_PATH}" 2> /dev/null; then
+  echo "[entrypoint] warning: cannot chmod ${SSH_PRIVATE_KEY_PATH}, continuing"
+fi
+
+if ! chmod 644 "${SSH_PUBLIC_KEY_PATH}" 2> /dev/null; then
+  echo "[entrypoint] warning: cannot chmod ${SSH_PUBLIC_KEY_PATH}, continuing"
+fi
+
+if [ -f "${SSH_PUBLIC_KEY_PATH}" ]; then
+  echo "[entrypoint] SSH public key:"
+  cat "${SSH_PUBLIC_KEY_PATH}"
+fi
+
+# UI_PASSWORD is the legacy alias; OPENCHAMBER_UI_PASSWORD is canonical.
+if [ -z "${OPENCHAMBER_UI_PASSWORD:-}" ] && [ -n "${UI_PASSWORD:-}" ]; then
+  OPENCHAMBER_UI_PASSWORD="${UI_PASSWORD}"
+  export OPENCHAMBER_UI_PASSWORD
+fi
+
+if [ -n "${OPENCHAMBER_UI_PASSWORD:-}" ]; then
+  echo "[entrypoint] UI password set, enabling authentication"
+fi
+
+if [ "${OH_MY_OPENCODE:-false}" = "true" ]; then
+  OMO_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/oh-my-opencode.json"
+
+  if [ ! -f "${OMO_CONFIG_FILE}" ]; then
+    echo "[entrypoint] npm installing oh-my-opencode..."
+    npm install --global oh-my-opencode
+
+    OMO_INSTALL_ARGS="--no-tui --claude=no --openai=no --gemini=no --copilot=no --opencode-zen=no --zai-coding-plan=no --kimi-for-coding=no --skip-auth"
+
+    echo "[entrypoint] oh-my-opencode installing..."
+    # shellcheck disable=SC2086 # word splitting is intentional: each flag becomes argv
+    oh-my-opencode install ${OMO_INSTALL_ARGS}
+  fi
+fi
+
+# Bind to all interfaces so docker port mapping works inside a container.
+# Otherwise the server would bind 127.0.0.1 and port mapping silently no-ops.
+OPENCHAMBER_HOST="${OPENCHAMBER_HOST:-0.0.0.0}"
+export OPENCHAMBER_HOST
+
+echo "[entrypoint] starting..."
+
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
+
+set -- bun packages/web/bin/cli.js
+if [ -n "${OPENCHAMBER_UI_PASSWORD:-}" ]; then
+  set -- "$@" --ui-password "${OPENCHAMBER_UI_PASSWORD}"
+fi
+"$@"
+
+exec bun packages/web/bin/cli.js logs

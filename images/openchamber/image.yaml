@@ -1,0 +1,4 @@
+upstream: https://github.com/btriapitsyn/openchamber
+base: oven/bun (debian)
+description: OpenChamber web UI for OpenCode with mise dev toolchain and remote BuildKit client
+license: MIT
