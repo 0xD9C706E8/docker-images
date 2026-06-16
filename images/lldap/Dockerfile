@@ -6,9 +6,6 @@ ARG LLDAP_VERSION=v0.6.3
 # renovate: datasource=github-releases depName=rustwasm/wasm-pack
 ARG WASM_PACK_VERSION=0.15.0
 
-# renovate: datasource=github-releases depName=rustwasm/wasm-bindgen
-ARG WASM_BINDGEN_VERSION=0.2.120
-
 FROM alpine:3.24@sha256:f5064d3e5f88c467c714509f491853ab2d951932c5cad699c0cb969dcec6f3b4 AS source
 ARG LLDAP_VERSION
 
@@ -30,7 +27,6 @@ RUN addgroup -g 1000 app \
         openssl-dev \
         perl
 ARG WASM_PACK_VERSION
-ARG WASM_BINDGEN_VERSION
 ARG TARGETARCH
 
 RUN case "${TARGETARCH}" in \
@@ -40,9 +36,18 @@ RUN case "${TARGETARCH}" in \
     esac \
  && curl -L "https://github.com/rustwasm/wasm-pack/releases/download/v${WASM_PACK_VERSION}/wasm-pack-v${WASM_PACK_VERSION}-${ARCH}-unknown-linux-musl.tar.gz" | tar xz -C /tmp \
  && mv "/tmp/wasm-pack-v${WASM_PACK_VERSION}-${ARCH}-unknown-linux-musl/wasm-pack" /usr/local/bin/ \
- && curl -L "https://github.com/rustwasm/wasm-bindgen/releases/download/${WASM_BINDGEN_VERSION}/wasm-bindgen-${WASM_BINDGEN_VERSION}-${ARCH}-unknown-linux-musl.tar.gz" | tar xz -C /tmp \
- && mv "/tmp/wasm-bindgen-${WASM_BINDGEN_VERSION}-${ARCH}-unknown-linux-musl/wasm-bindgen" /usr/local/bin/ \
  && rustup target add wasm32-unknown-unknown
+
+# Three coupled constraints:
+# - wasm-bindgen-cli version: must match lldap's Cargo.lock (wasm-pack enforces)
+# - cargo install (not prebuilt tarball): rustwasm/wasm-pack#1416 broken on Alpine arm64
+# - RUSTFLAGS=-Ctarget-feature=-crt-static: rust-lang/rust#115450 (link openssl-dev dynamic)
+RUN --mount=type=bind,from=source,source=/src/Cargo.lock,target=/tmp/Cargo.lock \
+    WASM_BINDGEN_VERSION="$(awk '/^name = "wasm-bindgen"$/{getline; print}' /tmp/Cargo.lock | sed -n 's/^version = "\(.*\)"/\1/p')" \
+ && [ -n "${WASM_BINDGEN_VERSION}" ] || { echo 'failed to extract wasm-bindgen version from Cargo.lock' >&2; exit 1; } \
+ && export CARGO_HOME=/tmp/cargo-bootstrap RUSTFLAGS="-Ctarget-feature=-crt-static" \
+ && cargo install wasm-bindgen-cli --locked --version "${WASM_BINDGEN_VERSION}" --root /usr/local \
+ && rm -rf /tmp/cargo-bootstrap
 
 USER app
 WORKDIR /app
