@@ -14,7 +14,7 @@ ARG LLDAP_VERSION
 
 ADD https://github.com/lldap/lldap.git#${LLDAP_VERSION} /src
 
-FROM rust:alpine3.21@sha256:7dba3db75b0d5861af2e5dcf5b87347411e84403b5c9835be00ef1e72e299d2a AS builder
+FROM rust:alpine3.24@sha256:f87aa870663e2b57ec8c69de82c7eedf7383bee987eef7612c0359635eaadb41 AS builder
 
 SHELL ["/bin/ash", "-o", "pipefail", "-c"]
 
