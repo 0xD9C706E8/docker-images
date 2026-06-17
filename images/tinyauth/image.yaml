@@ -1,0 +1,4 @@
+upstream: https://github.com/tinyauthapp/tinyauth
+base: distroless static
+description: Rootless forward-auth and OIDC gateway for reverse proxies
+license: AGPL-3.0
