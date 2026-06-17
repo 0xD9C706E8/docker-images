@@ -11,7 +11,7 @@ Four Go binaries are built from upstream source per release:
 - `rootlesskit` — the user-namespace wrapper (CGO disabled, static)
 - `runc` — the OCI runtime that actually executes build steps (CGO enabled, libseccomp statically linked, matches upstream `moby/buildkit:rootless` for seccomp coverage)
 
-Final stage is `alpine:3.24` with `fuse-overlayfs`, `fuse3`, `git`, `openssh-client`, `pigz`, `shadow-uidmap`, `xz`. Smaller runtime surface than upstream's rootless variant: drops the openssh server (we only ever invoke ssh as a client) and drops `openssl` (only used in vendored test code, never at runtime).
+Final stage is `alpine:3.24` with `fuse-overlayfs`, `fuse3`, `git`, `openssh-client`, `pigz`, `shadow-subids`, `shadow-uidmap`, `xz`. `newuidmap`/`newgidmap` carry `cap_setuid=ep` / `cap_setgid=ep` file capabilities (applied with `libcap-utils`, installed and removed in the same layer) — file caps round-trip through OCI cleanly; the setuid bit does not. Smaller runtime surface than upstream's rootless variant: drops the openssh server (we only ever invoke ssh as a client) and drops `openssl` (only used in vendored test code, never at runtime).
 
 ## Running
 
