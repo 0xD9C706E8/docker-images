@@ -56,9 +56,10 @@ Trivy scan runs after every push and PR build. It blocks on CRITICAL findings on
 
 ## Renovate (read carefully before editing)
 
-Two managers cover every version in this repo:
+Three managers cover every version in this repo:
 
-- **Custom regex manager** (`customManagers` in `renovate.json5`): matches `# renovate: datasource=X depName=Y` immediately above `ARG *_VERSION=` in any Dockerfile under `images/`. The annotation must include both `datasource=` and `depName=`; the values can be any Renovate-recognized datasource (`github-releases`, `docker`, etc.).
+- **Custom regex manager (basic)** (`customManagers[0]` in `renovate.json5`): matches `# renovate: datasource=X depName=Y` immediately above `ARG *_VERSION=` in any Dockerfile under `images/`. The annotation must include both `datasource=` and `depName=`; the values can be any Renovate-recognized datasource (`github-releases`, `docker`, etc.).
+- **Custom regex manager (with extractVersion)** (`customManagers[1]` in `renovate.json5`): variant of the basic manager that also captures `extractVersion=<regex>` from the annotation, used when the upstream tag carries a prefix the ARG must not (e.g. `^v(?<version>.+)$` strips `v` from `v2.335.1` so the ARG holds `2.335.1`).
 - **Built-in Dockerfile manager** (active via `config:best-practices`): bumps tag and digest on bare `FROM image:tag@sha256:...` lines without any annotation.
 
 Image-specific Renovate config (custom datasources, additional managers for non-standard ARG patterns, multi-line checksum-aware updates) lands as part of the PR that introduces the image.

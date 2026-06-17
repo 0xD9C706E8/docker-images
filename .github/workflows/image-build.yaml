@@ -33,17 +33,24 @@ jobs:
         # Defaults: description/license empty when image.yaml is missing.
         run: |
           config="images/${{ inputs.image }}/image.yaml"
+          arch="${{ inputs.platform }}"
+          arch="${arch#linux/}"
           if [ -f "$config" ]; then
             description=$(yq --unwrapScalar '.description // ""' "$config")
             license=$(yq --unwrapScalar '.license // ""' "$config")
+            build_args=$(yq --unwrapScalar ".buildArgs.${arch} // {} | to_entries | map(.key + \"=\" + .value) | .[]" "$config")
           else
             description=''
             license=''
+            build_args=''
           fi
           {
             echo "description=${description}"
             echo "license=${license}"
             echo "source=${{ github.server_url }}/${{ github.repository }}"
+            echo "build-args<<EOF"
+            echo "$build_args"
+            echo "EOF"
           } >> "$GITHUB_OUTPUT"
       - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
         with:
@@ -64,6 +71,7 @@ jobs:
         with:
           context: images/${{ inputs.image }}
           platforms: ${{ inputs.platform }}
+          build-args: ${{ steps.config.outputs.build-args }}
           outputs: type=image,"name=ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}",push-by-digest=true,name-canonical=true,push=true,oci-mediatypes=true
           # Manifest-level (per-image) OCI labels only. Index-level annotations belong on the
           # multi-arch manifest list and are written by build.yaml's merge job; emitting them

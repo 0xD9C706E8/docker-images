@@ -1,0 +1,8 @@
+# Trivy CRITICAL ignores for the actions-runner image.
+#
+# perl-base/perl-modules CVEs in debian 13.5 (carried by debian:13.5-slim).
+# Both marked fix_deferred/affected in debian 13.x with no fix planned in this
+# debian branch. Perl is pulled transitively by `git`. Revisit when debian
+# 13.x ships a Perl patch.
+CVE-2026-42496 exp:2026-08-16
+CVE-2026-8376 exp:2026-08-16
