@@ -80,8 +80,13 @@ RUN apk add --no-cache \
         git \
         openssh-client \
         pigz \
+        shadow-subids \
         shadow-uidmap \
         xz \
+ && apk add --no-cache --virtual .build-deps libcap-utils \
+ && setcap cap_setuid+ep /usr/bin/newuidmap \
+ && setcap cap_setgid+ep /usr/bin/newgidmap \
+ && apk del .build-deps \
  && adduser -D -u 1000 -s /sbin/nologin user \
  && mkdir -p /run/user/1000 /home/user/.local/tmp /home/user/.local/share/buildkit \
  && chown -R user /run/user/1000 /home/user \
