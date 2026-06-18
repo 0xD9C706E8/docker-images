@@ -1,7 +1,7 @@
 # https://github.com/openchamber/openchamber
 
 # renovate: datasource=github-releases depName=openchamber/openchamber
-ARG OPENCHAMBER_VERSION=v1.13.0
+ARG OPENCHAMBER_VERSION=v1.13.1
 
 # renovate: datasource=github-releases depName=aquaproj/aqua
 ARG AQUA_VERSION=v2.60.1
