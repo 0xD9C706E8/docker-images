@@ -139,7 +139,7 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
-set -- bun packages/web/bin/cli.js
+set -- bun packages/web/bin/cli.js --foreground
 if [ -n "${OPENCHAMBER_UI_PASSWORD:-}" ]; then
   set -- "$@" --ui-password "${OPENCHAMBER_UI_PASSWORD}"
 fi
