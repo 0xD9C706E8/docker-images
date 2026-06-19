@@ -10,7 +10,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.14.6'
@@ -33,7 +33,7 @@ jobs:
       include: ${{ steps.changed.outputs.include }}
       has-changes: ${{ steps.changed.outputs.has-changes }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
       # Triggers fan out to all images: PR checks depend on ci.yaml + the build/script chain
@@ -52,7 +52,7 @@ jobs:
       matrix:
         image: ${{ fromJson(needs.detect.outputs.images) }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Validate Renovate annotations in ${{ matrix.image }}/Dockerfile
         run: bash .github/scripts/lint-renovate-annotations.sh "images/${{ matrix.image }}/Dockerfile"
 
