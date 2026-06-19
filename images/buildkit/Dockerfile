@@ -1,7 +1,7 @@
 # https://github.com/moby/buildkit
 
 # renovate: datasource=github-releases depName=moby/buildkit
-ARG BUILDKIT_VERSION=v0.30.0
+ARG BUILDKIT_VERSION=v0.31.0
 
 # renovate: datasource=github-releases depName=opencontainers/runc
 ARG RUNC_VERSION=v1.4.3
