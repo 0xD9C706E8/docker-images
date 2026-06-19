@@ -8,7 +8,7 @@ ARG POCKET_ID_VERSION
 
 ADD https://github.com/pocket-id/pocket-id.git#${POCKET_ID_VERSION} /src
 
-FROM node:24-alpine@sha256:21f403ab171f2dc89bad4dd69d7721bfd15f084ccb46cdd225f31f2bc59b5c9a AS frontend-builder
+FROM node:24-alpine@sha256:156b55f92e98ccd5ef49578a8cea0df4679826564bad1c9d4ef04462b9f0ded6 AS frontend-builder
 RUN corepack enable
 
 WORKDIR /build
