@@ -4,7 +4,7 @@
 ARG BUILDKIT_VERSION=v0.31.0
 
 # renovate: datasource=github-releases depName=opencontainers/runc
-ARG RUNC_VERSION=v1.4.3
+ARG RUNC_VERSION=v1.5.0
 
 # renovate: datasource=github-releases depName=rootless-containers/rootlesskit
 ARG ROOTLESSKIT_VERSION=v3.0.1
