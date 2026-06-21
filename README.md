@@ -1,11 +1,11 @@
 # docker-images
 
-Custom container images for my homelab. Rootless where possible, distroless where it makes sense, automated end to end.
+Custom container images for my homelab. Rootless where possible, distroless where it makes sense.
 
 [![Build](https://github.com/0xD9C706E8/docker-images/actions/workflows/build.yaml/badge.svg)](https://github.com/0xD9C706E8/docker-images/actions/workflows/build.yaml)
 [![Renovate](https://img.shields.io/badge/renovate-enabled-brightgreen)](https://docs.renovatebot.com/)
 
-This repo bakes opinionated containers for the apps I actually run at home. Nothing fancy under the hood, just Dockerfiles, GitHub Actions, and Renovate doing the heavy lifting. If any of these images happens to fit your homelab too, help yourself.
+This repo bakes opinionated containers for the apps I actually run at home.
 
 ## What's in the box
 
@@ -19,7 +19,7 @@ This repo bakes opinionated containers for the apps I actually run at home. Noth
 | [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static | amd64, arm64 | Rootless DNS proxy and ad-blocker for the home network | Apache-2.0 |
 | [buildkit](images/buildkit/) | [moby/buildkit](https://github.com/moby/buildkit) | alpine | amd64, arm64 | Rootless BuildKit daemon for remote builds from in-cluster clients | Apache-2.0 |
 | [lldap](images/lldap/) | [lldap/lldap](https://github.com/lldap/lldap) | alpine | amd64, arm64 | Light LDAP server backed by SQLite/MariaDB/Postgres | GPL-3.0 |
-| [openchamber](images/openchamber/) | [openchamber/openchamber](https://github.com/openchamber/openchamber) | oven/bun (debian) | amd64, arm64 | OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client | MIT |
+| [openchamber](images/openchamber/) | [openchamber/openchamber](https://github.com/openchamber/openchamber) | node (debian) | amd64, arm64 | OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client | MIT |
 | [pocket-id](images/pocket-id/) | [pocket-id/pocket-id](https://github.com/pocket-id/pocket-id) | distroless static | amd64, arm64 | Rootless OIDC provider with passkey authentication | BSD-2-Clause |
 | [tinyauth](images/tinyauth/) | [tinyauthapp/tinyauth](https://github.com/tinyauthapp/tinyauth) | distroless static | amd64, arm64 | Rootless forward-auth and OIDC gateway for reverse proxies | AGPL-3.0 |
 
@@ -30,8 +30,6 @@ This repo bakes opinionated containers for the apps I actually run at home. Noth
 All images publish to `ghcr.io/0xd9c706e8/<app>` and tag as `:1`, `:1.2`, `:1.2.3`, and `:latest`. My downstream K8s manifests pin by digest via Renovate, so `:latest` is convenient for browsing but not what production tracks.
 
 ## What I optimized for
-
-A few things I cared about that you might too.
 
 **Smallest sane base image.** Go-only apps go to `gcr.io/distroless/static-debian12:nonroot`. Anything that needs glibc, Python, PHP, or a real init goes to a slim Debian or Alpine. No "ubuntu:latest with build tools left in" surprises.
 

@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
-# Entrypoint for the openchamber image. Owns three concerns:
-#
-#   1. Provision a buildx remote builder when BUILDKIT_HOST + mTLS material are
-#      present, so the agent's `docker buildx build` can target an external
-#      rootless BuildKit without --privileged or a docker socket.
-#   2. Bootstrap an SSH key for git operations on first run, with graceful
-#      degradation when /home/openchamber/.ssh is read-only.
-#   3. Launch the openchamber web server with the right host binding and
-#      optional UI password.
-#
-# When BUILDKIT_HOST is unset, step 1 is a no-op and the image still works for
-# non-build sessions.
+# Entrypoint for the openchamber image.
 
 set -euo pipefail
 
@@ -139,7 +128,7 @@ if [ "$#" -gt 0 ]; then
   exec "$@"
 fi
 
-set -- bun packages/web/bin/cli.js --foreground
+set -- node packages/web/bin/cli.js --foreground
 if [ -n "${OPENCHAMBER_UI_PASSWORD:-}" ]; then
   set -- "$@" --ui-password "${OPENCHAMBER_UI_PASSWORD}"
 fi
