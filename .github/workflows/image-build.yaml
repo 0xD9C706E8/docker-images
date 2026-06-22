@@ -25,6 +25,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Read image metadata
@@ -83,9 +84,6 @@ jobs:
           cache-from: type=gha,scope=${{ inputs.image }}-${{ inputs.platform }}
           cache-to: type=gha,mode=max,scope=${{ inputs.image }}-${{ inputs.platform }}
           provenance: false
-      - name: Resolve built digest
-        id: digest
-        run: echo "value=${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
       - name: Export digest as filename
         run: |
           mkdir -p "${RUNNER_TEMP}/digests"
@@ -107,15 +105,28 @@ jobs:
           else
             echo "path=" >> "$GITHUB_OUTPUT"
           fi
+      - name: Trivy scan (SARIF)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.build.outputs.digest }}
+          format: sarif
+          output: trivy-results.sarif
+          trivyignores: ${{ steps.trivyignore.outputs.path }}
+      - name: Upload SARIF results to GitHub Security
+        uses: github/codeql-action/upload-sarif@dd903d2e4f5405488e5ef1422510ee31c8b32357 # v3.36.2
+        with:
+          sarif_file: trivy-results.sarif
+          category: ${{ inputs.image }}-${{ steps.slug.outputs.value }}
       - name: Trivy scan (blocking on CRITICAL)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          image-ref: ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.digest.outputs.value }}
+          image-ref: ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.build.outputs.digest }}
           format: table
           severity: CRITICAL
           exit-code: '1'
           output: trivy-critical.txt
           trivyignores: ${{ steps.trivyignore.outputs.path }}
+          skip-setup-trivy: true
       - name: Surface CRITICAL findings on failure
         if: failure()
         run: |
@@ -133,6 +144,6 @@ jobs:
             echo "### \`${{ inputs.image }}\`"
             echo
             echo '```'
-            echo "docker pull ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.digest.outputs.value }}"
+            echo "docker pull ghcr.io/${{ steps.owner.outputs.name }}/${{ inputs.image }}@${{ steps.build.outputs.digest }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
