@@ -9,7 +9,7 @@ Multi-stage build over upstream source:
 - `source` stage: clones `openchamber/openchamber.git` at the pinned `OPENCHAMBER_VERSION` ref.
 - `deps` stage: `bun install --frozen-lockfile --ignore-scripts` against the workspace `package.json` set, matching upstream.
 - `builder` stage: `bun run build:web` to produce the web bundle.
-- runtime stage: `oven/bun:1.3.14-slim` with a minimal apt set, `aqua` and `aqua-registry` pulled in from dedicated build stages (alpine-based, native `ADD` for the registry), docker CLI and buildx plugin from `docker:<version>-cli`, cloudflared digest-pinned, opencode-ai installed via `npm install --global`.
+- `runtime` stage: `node:24-slim` with `aqua`, `aqua-registry`, docker CLI + buildx, digest-pinned `cloudflared`, and globally-installed `opencode-ai`. Build stages still use `oven/bun:1.3.14-slim` to consume the upstream `bun.lock` lockfile.
 
 Four Renovate-tracked pins:
 
@@ -21,8 +21,8 @@ Four Renovate-tracked pins:
 ## What ships at runtime
 
 - The OpenChamber web server bound at `:3000`.
-- `aqua` with the standard registry pre-linked (~2000 CLI tools lazy-installed on first invocation). No per-project `aqua.yaml` required for any tool the standard registry covers.
-- `docker` CLI + `docker buildx` plugin. Daemon is external — see the BuildKit section.
+- `aqua` with the standard registry pre-linked. No per-project `aqua.yaml` is required.
+- `docker` CLI + `docker buildx` plugin. The Docker daemon is external.
 - `cloudflared` for tunnel modes (matches upstream).
 - `opencode-ai` installed globally so OpenChamber can spawn opencode sessions out of the box.
 
@@ -88,7 +88,7 @@ volumes:
   buildkit-cache:
 ```
 
-Inside an OpenChamber session, the agent's bash tool can run `docker buildx build --builder remote ...` against the remote daemon.
+From a session, run `docker buildx build --builder remote ...` against the remote daemon.
 
 ### Kubernetes
 
@@ -180,13 +180,11 @@ spec:
 
 ## Dev toolchains via aqua
 
-The image ships [aqua](https://aquaproj.github.io) wired against the [aqua-registry](https://github.com/aquaproj/aqua-registry) standard catalog. At build time, `aqua install --only-link --all` pre-creates hardlinks for every package the registry covers (~2000 CLI tools). At runtime, the first invocation of any tool downloads the registry's pinned version on demand (lazy install).
+The image ships [aqua](https://aquaproj.github.io) wired against the [aqua-registry](https://github.com/aquaproj/aqua-registry) standard catalog. At build time, `aqua install --only-link --all` pre-creates hardlinks for every package; at runtime, the first invocation downloads the registry's pinned version.
 
-What this means in practice for an OpenCode session:
-
-- `node`, `go`, `uv`, `rustup-init`, `terraform`, `kubectl`, `helm`, `gh`, `jq`, `yq`, and ~2000 other CLI tools resolve cleanly without any per-project config.
+- `go`, `uv`, `rustup-init`, `terraform`, `kubectl`, `helm`, `gh`, `jq`, `yq`, and ~2000 other CLI tools resolve cleanly via aqua without any per-project config. `node`, `npm`, and `npx` come from the Node.js 24 LTS base image.
 - Python is installed via `uv` (e.g. `uv python install 3.13` or `uv run python script.py`). The image does not ship a system Python.
 - Rust is bootstrapped on first use via `rustup-init -y --no-modify-path && source ~/.cargo/env`.
 - `AQUA_DISABLE_POLICY=true` is set so lazy installs don't require interactive policy approval.
 
-The aqua cache at `/home/openchamber/.local/share/aquaproj-aqua` should be a persistent volume — without it, every restart re-downloads installed binaries. PATH order puts `~/.npm-global/bin` before aqua's bin dir, so the npm-installed `opencode-ai@${OPENCODE_AI_VERSION}` wins over aqua's `anomalyco/opencode` hardlink; that's the version that actually runs.
+The aqua cache at `/home/openchamber/.local/share/aquaproj-aqua` should be a persistent volume — without it, every restart re-downloads installed binaries. PATH order puts `~/.npm-global/bin` before aqua's bin dir, so the npm-installed `opencode-ai@${OPENCODE_AI_VERSION}` wins over aqua's `anomalyco/opencode` hardlink.

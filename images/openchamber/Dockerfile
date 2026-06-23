@@ -10,7 +10,7 @@ ARG AQUA_VERSION=v2.60.1
 ARG AQUA_REGISTRY_VERSION=v4.526.0
 
 # renovate: datasource=npm depName=opencode-ai
-ARG OPENCODE_AI_VERSION=1.17.8
+ARG OPENCODE_AI_VERSION=1.17.9
 
 FROM docker:29.6.0-cli@sha256:d14410ab6f87a2b6c14b7150de787cd7b8bb012a8e900966d6d893e9f7fc49b6 AS docker-cli
 
@@ -48,13 +48,11 @@ RUN bun install --frozen-lockfile --ignore-scripts \
  && find /app -type d -name 'app-builder-bin' -prune -exec rm -rf {} +
 
 FROM deps AS builder
-WORKDIR /app
-
 COPY --from=source /src ./
 
 RUN bun run build:web
 
-FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04
+FROM node:24-slim@sha256:c2d5ade763cacfb03fe9cb8e8af5d1be5041ff331921fa26a9b231ca3a4f780a
 ARG AQUA_REGISTRY_VERSION
 ARG OPENCODE_AI_VERSION
 
@@ -76,7 +74,7 @@ COPY --from=cloudflare/cloudflared:2026.6.1@sha256:6d91c121b803126f7a5344005d17a
 COPY --from=aqua-cli /usr/local/bin/aqua /usr/local/bin/aqua
 ADD --chown=1000:1000 https://github.com/aquaproj/aqua-registry.git#${AQUA_REGISTRY_VERSION} /opt/aqua-registry
 
-RUN userdel bun \
+RUN userdel node \
  && groupadd --gid=1000 openchamber \
  && useradd --uid=1000 --gid=1000 --create-home --shell=/bin/bash openchamber \
  && mkdir --parents /home/openchamber/.npm-global \
@@ -93,7 +91,7 @@ ENV HOME=/home/openchamber \
     AQUA_ROOT_DIR=/home/openchamber/.local/share/aquaproj-aqua \
     AQUA_GLOBAL_CONFIG=/opt/aqua-registry/aqua-all.yaml \
     AQUA_DISABLE_POLICY=true \
-    PATH=/home/openchamber/.npm-global/bin:/home/openchamber/.local/share/aquaproj-aqua/bin:/usr/local/bin:/usr/bin:/bin \
+    PATH=/home/openchamber/.npm-global/bin:/usr/local/bin:/usr/bin:/bin:/home/openchamber/.local/share/aquaproj-aqua/bin \
     NODE_ENV=production
 
 RUN aqua install --only-link --all

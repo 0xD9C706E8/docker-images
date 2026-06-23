@@ -1,4 +1,4 @@
 upstream: https://github.com/openchamber/openchamber
-base: oven/bun (debian)
+base: node (debian)
 description: OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client
 license: MIT
