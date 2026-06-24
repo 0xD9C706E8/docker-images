@@ -52,7 +52,7 @@ COPY --from=source /src ./
 
 RUN bun run build:web
 
-FROM node:24-slim@sha256:c2d5ade763cacfb03fe9cb8e8af5d1be5041ff331921fa26a9b231ca3a4f780a
+FROM node:24-slim@sha256:862263c612aa437e3037674b85419622a9d93bff80aa1eee5398dfe686375532
 ARG AQUA_REGISTRY_VERSION
 ARG OPENCODE_AI_VERSION
 
