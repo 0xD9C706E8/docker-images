@@ -1,6 +1,6 @@
 upstream: https://github.com/actions/runner
 base: debian-slim
-description: Rootless GitHub Actions self-hosted runner backed by remote BuildKit
+description: Rootless GitHub Actions self-hosted runner with aqua-managed on-demand tooling and remote BuildKit
 license: MIT
 buildArgs:
   amd64:
