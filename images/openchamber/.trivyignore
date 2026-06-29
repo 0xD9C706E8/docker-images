@@ -1,16 +1,11 @@
 # Trivy CRITICAL ignores for the openchamber image.
 #
-# perl-base/perl-modules CVEs in debian 12/13 (carried by node:24-slim and
-# oven/bun:1.3.14-slim). Both marked fix_deferred/affected in debian with no
+# perl-base/perl-modules CVEs in debian 13 (carried by the runtime base image).
+# Both marked fix_deferred/affected in debian with no
 # fix planned in this debian branch. Revisit when the runtime base ships
 # against a newer debian release.
 CVE-2026-42496 exp:2026-08-16
 CVE-2026-8376 exp:2026-08-16
-
-# zlib1g CVE in debian 12 (carried by node:24-slim). Marked will_not_fix in
-# debian 12; the vulnerable minizip code path is not used by openchamber.
-# Revisit when the runtime base ships against a newer debian release.
-CVE-2023-45853 exp:2026-08-16
 
 # npm packages in the openchamber web vendor bundle. Pinned by upstream's
 # bun.lock; we don't own the upgrade path. Revisit when openchamber upstream
