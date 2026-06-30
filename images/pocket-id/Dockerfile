@@ -3,12 +3,12 @@
 # renovate: datasource=github-releases depName=pocket-id/pocket-id
 ARG POCKET_ID_VERSION=v2.9.0
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS source
+FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS source
 ARG POCKET_ID_VERSION
 
 ADD https://github.com/pocket-id/pocket-id.git#${POCKET_ID_VERSION} /src
 
-FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS frontend-builder
+FROM node:24.18.0-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS frontend-builder
 RUN corepack enable
 
 WORKDIR /build
