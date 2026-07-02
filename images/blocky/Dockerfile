@@ -1,7 +1,7 @@
 # https://github.com/0xERR0R/blocky
 
 # renovate: datasource=github-releases depName=0xERR0R/blocky
-ARG BLOCKY_VERSION=v0.32.1
+ARG BLOCKY_VERSION=v0.33.0
 
 FROM golang:1.26.4-alpine@sha256:3ad57304ad93bbec8548a0437ad9e06a455660655d9af011d58b993f6f615648 AS builder
 ARG BLOCKY_VERSION
