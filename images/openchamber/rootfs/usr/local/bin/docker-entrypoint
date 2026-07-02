@@ -1,36 +1,9 @@
 #!/usr/bin/env bash
-# Entrypoint for the openchamber image.
+# Entrypoint for the openchamber web UI image.
 
 set -euo pipefail
 
 HOME="/home/openchamber"
-
-if [ -n "${BUILDKIT_HOST:-}" ] &&
-  [ -r /certs/ca.pem ] &&
-  [ -r /certs/cert.pem ] &&
-  [ -r /certs/key.pem ]; then
-
-  builder_certs="${HOME}/.docker/buildx/certs/remote"
-  mkdir --parents "${builder_certs}"
-  install --mode=0644 /certs/ca.pem "${builder_certs}/ca.pem"
-  install --mode=0644 /certs/cert.pem "${builder_certs}/cert.pem"
-  install --mode=0600 /certs/key.pem "${builder_certs}/key.pem"
-
-  if ! docker buildx inspect remote > /dev/null 2>&1; then
-    docker buildx create \
-      --name remote \
-      --driver remote \
-      --use \
-      --bootstrap \
-      "tcp://${BUILDKIT_HOST#tcp://}" \
-      > /dev/null
-  else
-    docker buildx use remote
-  fi
-fi
-
-OPENCODE_CONFIG_DIR="${OPENCODE_CONFIG_DIR:-${HOME}/.config/opencode}"
-export OPENCODE_CONFIG_DIR
 
 # Default openchamber settings: opt out of anonymous usage reports so the app
 # does not phone home on first run. Users can flip this back in the Appearance
@@ -102,19 +75,11 @@ if [ -n "${OPENCHAMBER_UI_PASSWORD:-}" ]; then
   echo "[entrypoint] UI password set, enabling authentication"
 fi
 
-if [ "${OH_MY_OPENCODE:-false}" = "true" ]; then
-  OMO_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/oh-my-opencode.json"
-
-  if [ ! -f "${OMO_CONFIG_FILE}" ]; then
-    echo "[entrypoint] npm installing oh-my-opencode..."
-    npm install --global oh-my-opencode
-
-    OMO_INSTALL_ARGS="--no-tui --claude=no --openai=no --gemini=no --copilot=no --opencode-zen=no --zai-coding-plan=no --kimi-for-coding=no --skip-auth"
-
-    echo "[entrypoint] oh-my-opencode installing..."
-    # shellcheck disable=SC2086 # word splitting is intentional: each flag becomes argv
-    oh-my-opencode install ${OMO_INSTALL_ARGS}
-  fi
+# This image ships no opencode-ai; OPENCODE_SKIP_START=true is set in the
+# Dockerfile ENV. The operator points OpenChamber at an external OpenCode
+# server via OPENCODE_HOST (e.g. http://opencode:4096).
+if [ -z "${OPENCODE_HOST:-}" ]; then
+  echo "[entrypoint] warning: OPENCODE_HOST is unset; OpenChamber has no OpenCode server to talk to" >&2
 fi
 
 # Bind to all interfaces so docker port mapping works inside a container.

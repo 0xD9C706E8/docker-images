@@ -1,4 +1,4 @@
 upstream: https://github.com/openchamber/openchamber
 base: node (debian)
-description: OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client
+description: OpenChamber web UI; connects to an external OpenCode server via OPENCODE_HOST
 license: MIT
