@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Entrypoint for the opencode image.
+
+set -euo pipefail
+
+HOME="/home/opencode"
+
+if [ -n "${BUILDKIT_HOST:-}" ] &&
+  [ -r /certs/ca.pem ] &&
+  [ -r /certs/cert.pem ] &&
+  [ -r /certs/key.pem ]; then
+
+  builder_certs="${HOME}/.docker/buildx/certs/remote"
+  mkdir --parents "${builder_certs}"
+  install --mode=0644 /certs/ca.pem "${builder_certs}/ca.pem"
+  install --mode=0644 /certs/cert.pem "${builder_certs}/cert.pem"
+  install --mode=0600 /certs/key.pem "${builder_certs}/key.pem"
+
+  if ! docker buildx inspect remote > /dev/null 2>&1; then
+    docker buildx create \
+      --name remote \
+      --driver remote \
+      --use \
+      --bootstrap \
+      "tcp://${BUILDKIT_HOST#tcp://}" \
+      > /dev/null
+  else
+    docker buildx use remote
+  fi
+fi
+
+OPENCODE_CONFIG_DIR="${OPENCODE_CONFIG_DIR:-${HOME}/.config/opencode}"
+export OPENCODE_CONFIG_DIR
+
+SSH_DIR="${HOME}/.ssh"
+SSH_PRIVATE_KEY_PATH="${SSH_DIR}/id_ed25519"
+SSH_PUBLIC_KEY_PATH="${SSH_PRIVATE_KEY_PATH}.pub"
+
+mkdir --parents "${SSH_DIR}"
+
+ssh_dir_perms=$(stat --format=%a "${SSH_DIR}" 2> /dev/null || echo "")
+if [ -n "${ssh_dir_perms}" ] && [ "${ssh_dir_perms}" != "700" ]; then
+  echo "[entrypoint] warning: ${SSH_DIR} has mode ${ssh_dir_perms}, expected 700; ssh may complain" >&2
+fi
+
+if [ ! -f "${SSH_PRIVATE_KEY_PATH}" ] || [ ! -f "${SSH_PUBLIC_KEY_PATH}" ]; then
+  if [ ! -w "${SSH_DIR}" ]; then
+    echo "[entrypoint] warning: ssh key missing and ${SSH_DIR} is not writable, continuing without SSH key" >&2
+  else
+    echo "[entrypoint] generating SSH key..."
+    if ! ssh-keygen -t ed25519 -N "" -f "${SSH_PRIVATE_KEY_PATH}" > /dev/null 2>&1; then
+      echo "[entrypoint] warning: failed to generate SSH key, continuing without SSH key" >&2
+    fi
+  fi
+fi
+
+if [ -f "${SSH_PRIVATE_KEY_PATH}" ]; then
+  ssh_priv_perms=$(stat --format=%a "${SSH_PRIVATE_KEY_PATH}" 2> /dev/null || echo "")
+  if [ -n "${ssh_priv_perms}" ] && [ "${ssh_priv_perms}" != "600" ]; then
+    echo "[entrypoint] warning: ${SSH_PRIVATE_KEY_PATH} has mode ${ssh_priv_perms}, expected 600; ssh will refuse to use it" >&2
+  fi
+fi
+
+if [ -f "${SSH_PUBLIC_KEY_PATH}" ]; then
+  ssh_pub_perms=$(stat --format=%a "${SSH_PUBLIC_KEY_PATH}" 2> /dev/null || echo "")
+  if [ -n "${ssh_pub_perms}" ] && [ "${ssh_pub_perms}" != "644" ]; then
+    echo "[entrypoint] warning: ${SSH_PUBLIC_KEY_PATH} has mode ${ssh_pub_perms}, expected 644" >&2
+  fi
+fi
+
+if [ -f "${SSH_PUBLIC_KEY_PATH}" ]; then
+  echo "[entrypoint] SSH public key:"
+  cat "${SSH_PUBLIC_KEY_PATH}"
+fi
+
+if [ "${OH_MY_OPENCODE:-false}" = "true" ]; then
+  OMO_CONFIG_FILE="${OPENCODE_CONFIG_DIR}/oh-my-opencode.json"
+
+  if [ ! -f "${OMO_CONFIG_FILE}" ]; then
+    echo "[entrypoint] npm installing oh-my-opencode..."
+    npm install --global oh-my-opencode
+
+    OMO_INSTALL_ARGS="--no-tui --claude=no --openai=no --gemini=no --copilot=no --opencode-zen=no --zai-coding-plan=no --kimi-for-coding=no --skip-auth"
+
+    echo "[entrypoint] oh-my-opencode installing..."
+    # shellcheck disable=SC2086 # word splitting is intentional: each flag becomes argv
+    oh-my-opencode install ${OMO_INSTALL_ARGS}
+  fi
+fi
+
+# Bind to all interfaces so the OpenChamber container can reach the server.
+OPENCODE_SERVER_HOSTNAME="${OPENCODE_SERVER_HOSTNAME:-0.0.0.0}"
+OPENCODE_SERVER_PORT="${OPENCODE_SERVER_PORT:-4096}"
+
+echo "[entrypoint] starting..."
+
+if [ "$#" -gt 0 ]; then
+  exec "$@"
+fi
+
+set -- opencode serve --hostname "${OPENCODE_SERVER_HOSTNAME}" --port "${OPENCODE_SERVER_PORT}"
+
+if [ -n "${OPENCODE_CORS:-}" ]; then
+  IFS=',' read -ra cors_origins <<< "${OPENCODE_CORS}"
+  for origin in "${cors_origins[@]}"; do
+    set -- "$@" --cors "${origin}"
+  done
+fi
+
+exec "$@"
