@@ -1,7 +1,7 @@
 # https://github.com/anomalyco/opencode
 
 # renovate: datasource=npm depName=opencode-ai
-ARG OPENCODE_AI_VERSION=1.17.12
+ARG OPENCODE_AI_VERSION=1.17.13
 
 # renovate: datasource=github-releases depName=aquaproj/aqua
 ARG AQUA_VERSION=v2.60.1
