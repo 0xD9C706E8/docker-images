@@ -9,7 +9,7 @@ ARG AQUA_VERSION=v2.60.1
 ARG AQUA_PKG_VERSION=2.60.1
 
 # renovate: datasource=github-releases depName=aquaproj/aqua-registry
-ARG AQUA_REGISTRY_VERSION=v4.530.0
+ARG AQUA_REGISTRY_VERSION=v4.531.0
 
 FROM docker:29.6.1-cli@sha256:862099ada15c669000bef53aa4cb9d821262829f45b0dda2159ccb276443043b AS docker-cli
 
