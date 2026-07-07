@@ -43,6 +43,8 @@ COPY --from=source /src/packages/ui/package.json ./packages/ui/
 COPY --from=source /src/packages/web/package.json ./packages/web/
 COPY --from=source /src/packages/electron/package.json ./packages/electron/
 COPY --from=source /src/packages/vscode/package.json ./packages/vscode/
+COPY --from=source /src/packages/mobile/package.json ./packages/mobile/
+COPY --from=source /src/patches ./patches
 
 RUN bun install --frozen-lockfile --ignore-scripts \
  && find /app -type d -name 'app-builder-bin' -prune -exec rm -rf {} +
