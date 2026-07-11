@@ -57,9 +57,11 @@ image_dirs_from_changes() {
   matches=$(echo "$changed" | grep --only-matching --perl-regexp 'images/\K[^/]+' | sort --unique || true)
   if [ -z "$matches" ]; then
     echo '[]'
-  else
-    echo "$matches" | jq --raw-input --compact-output '[., inputs]'
+    return
   fi
+  echo "$matches" | while IFS= read -r img; do
+    [ -d "images/${img}" ] && echo "$img"
+  done | jq --raw-input --compact-output '[., inputs]'
 }
 
 # Build a regex that matches any of the rebuild-all trigger paths.
