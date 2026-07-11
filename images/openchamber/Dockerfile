@@ -4,7 +4,7 @@
 ARG OPENCHAMBER_VERSION=v1.14.1
 
 # renovate: datasource=github-releases depName=aquaproj/aqua
-ARG AQUA_VERSION=v2.60.1
+ARG AQUA_VERSION=v2.60.2
 
 # renovate: datasource=github-releases depName=aquaproj/aqua-registry
 ARG AQUA_REGISTRY_VERSION=v4.534.0
