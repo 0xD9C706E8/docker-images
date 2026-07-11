@@ -12,3 +12,4 @@ CVE-2026-8376 exp:2026-08-16
 # bumps the offending package version.
 CVE-2026-41242 exp:2026-07-16  # protobufjs 6.11.6 -> fixed in 7.5.5/8.0.1
 CVE-2026-9277 exp:2026-07-16   # shell-quote 1.8.3 -> fixed in 1.8.4
+CVE-2026-60002 exp:2026-08-16  # openssh-client < 10.4 (use-after-free); wait for debian 13 backport

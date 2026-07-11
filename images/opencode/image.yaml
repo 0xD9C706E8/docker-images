@@ -1,9 +1,0 @@
-upstream: https://github.com/anomalyco/opencode
-base: node (debian)
-description: OpenCode agent runtime with aqua-managed CLI toolchain and remote BuildKit client
-license: MIT
-buildArgs:
-  amd64:
-    AQUA_ARCH: amd64
-  arm64:
-    AQUA_ARCH: arm64

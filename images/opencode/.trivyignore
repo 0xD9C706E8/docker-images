@@ -1,8 +1,0 @@
-# Trivy CRITICAL ignores for the opencode image.
-#
-# perl-base/perl-modules CVEs in debian 13 (carried by the runtime base image).
-# Both marked fix_deferred/affected in debian with no
-# fix planned in this debian branch. Revisit when the runtime base ships
-# against a newer debian release.
-CVE-2026-42496 exp:2026-08-16
-CVE-2026-8376 exp:2026-08-16
