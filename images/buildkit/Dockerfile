@@ -7,7 +7,7 @@ ARG BUILDKIT_VERSION=v0.31.1
 ARG RUNC_VERSION=v1.5.0
 
 # renovate: datasource=github-releases depName=rootless-containers/rootlesskit
-ARG ROOTLESSKIT_VERSION=v3.0.1
+ARG ROOTLESSKIT_VERSION=v3.0.2
 
 FROM golang:1.26.5-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS gobuild-base
 RUN apk add --no-cache musl-dev
