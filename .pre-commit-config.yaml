@@ -49,7 +49,7 @@ repos:
         entry: prettier --write
         language: node
         additional_dependencies:
-          - prettier@3.9.4
+          - prettier@3.9.5
         types_or: [yaml, markdown, json]
         files: \.(ya?ml|md|json5?)$
 
