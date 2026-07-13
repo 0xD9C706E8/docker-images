@@ -18,6 +18,7 @@ This repo bakes opinionated containers for the apps I actually run at home.
 | [actions-runner](images/actions-runner/) | [actions/runner](https://github.com/actions/runner) | debian-slim | amd64, arm64 | Rootless GitHub Actions self-hosted runner with aqua-managed on-demand tooling and remote BuildKit | MIT |
 | [blocky](images/blocky/) | [0xERR0R/blocky](https://github.com/0xERR0R/blocky) | distroless static | amd64, arm64 | Rootless DNS proxy and ad-blocker for the home network | Apache-2.0 |
 | [buildkit](images/buildkit/) | [moby/buildkit](https://github.com/moby/buildkit) | alpine | amd64, arm64 | Rootless BuildKit daemon for remote builds from in-cluster clients | Apache-2.0 |
+| [firefly-iii](images/firefly-iii/) | [firefly-iii/firefly-iii](https://github.com/firefly-iii/firefly-iii) | alpine | amd64, arm64 | Firefly III personal finance manager (PHP-FPM) | AGPL-3.0-or-later |
 | [lldap](images/lldap/) | [lldap/lldap](https://github.com/lldap/lldap) | alpine | amd64, arm64 | Light LDAP server backed by SQLite/MariaDB/Postgres | GPL-3.0 |
 | [openchamber](images/openchamber/) | [openchamber/openchamber](https://github.com/openchamber/openchamber) | node (debian) | amd64, arm64 | OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client | MIT |
 | [pocket-id](images/pocket-id/) | [pocket-id/pocket-id](https://github.com/pocket-id/pocket-id) | distroless static | amd64, arm64 | Rootless OIDC provider with passkey authentication | BSD-2-Clause |
