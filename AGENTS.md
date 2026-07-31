@@ -3,6 +3,17 @@
 Homelab container-image monorepo. Dockerfiles only, no application code, no local build artifacts.
 Images publish to `ghcr.io/0xd9c706e8/<app>`. Repo uses git config `0xD9C706E8`; for any `gh` CLI call use `GH_TOKEN=$(gh auth token) gh ...`.
 
+## Development principles
+
+These are the rules the repo was built under. Follow them when adding or changing anything.
+
+- **KISS.** Single-purpose Dockerfiles in a monorepo. Validation is "does it build, does it start." No multi-stage complexity unless the app's build system demands it. No VOLUME directives (K8s handles that). Don't over-engineer.
+- **Defaults over explicits.** Only specify what differs from the default. Proof: `.yamllint.yaml` only sets `line-length: 140`, `.hadolint.yaml` only ignores a handful of rules, pre-commit hooks use stock configs. If the default is fine, leave it.
+- **Prefer official sources.** Base images come from the project that owns the software (e.g., `golang:1.23`, not a community repack). Registry is always `ghcr.io` for publishing. The only Docker Hub images allowed are official-library base images.
+- **Always use latest available version.** When adding a new `ARG *_VERSION=`, pin the latest stable release as of that moment. Renovate handles updates from there via the custom regex managers in `renovate.json5`. Never pin to `latest` or a floating tag.
+- **Document before you code.** Before writing a Dockerfile, check the app's release page for: the correct binary name, supported architectures, required build dependencies, and where the binary lands after build. Don't guess at ARG values or COPY paths.
+- **Clear code over comments.** Directory names are the image names. ARG names describe what they hold (`HUGO_VERSION`, not `VERSION`). Renovate annotations carry metadata. Dockerfiles carry no block comments — let the structure do the explaining.
+
 ## Layout
 
 - `images/<app>/Dockerfile`: one directory per image. Directory name **is** the GHCR package name (workflow derives it from `basename`). Renaming a dir renames the published image.
