@@ -10,7 +10,7 @@ ARG ACTIONS_RUNNER_SHA256=4ef2f25285f0ae4477f1fe1e346db76d2f3ebf03824e2ddd1973a2
 # renovate: datasource=github-releases depName=aquaproj/aqua
 ARG AQUA_VERSION=v2.61.0
 # renovate: datasource=github-releases depName=aquaproj/aqua-registry
-ARG AQUA_REGISTRY_VERSION=v4.537.0
+ARG AQUA_REGISTRY_VERSION=v4.545.0
 
 FROM debian:13.6-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7ab59f2add76a7bd AS runner-source
 ARG ACTIONS_RUNNER_VERSION
