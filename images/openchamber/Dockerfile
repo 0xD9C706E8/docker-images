@@ -83,9 +83,9 @@ RUN userdel node \
              /home/openchamber/.local/share/aquaproj-aqua \
              /home/openchamber/.docker \
              /home/openchamber/.ssh \
- && chown --recursive openchamber:openchamber /home/openchamber
+ && chown --recursive 1000:1000 /home/openchamber
 
-USER openchamber
+USER 1000
 WORKDIR /home/openchamber
 
 ENV HOME=/home/openchamber \
@@ -101,15 +101,15 @@ RUN aqua install --only-link --all
 RUN npm config set prefix /home/openchamber/.npm-global \
  && npm install --global "opencode-ai@${OPENCODE_AI_VERSION}"
 
-COPY --from=builder --chown=openchamber:openchamber /app/node_modules ./node_modules
-COPY --from=builder --chown=openchamber:openchamber /app/packages/web/node_modules ./packages/web/node_modules
-COPY --from=builder --chown=openchamber:openchamber /app/package.json ./package.json
-COPY --from=builder --chown=openchamber:openchamber /app/packages/web/package.json ./packages/web/package.json
-COPY --from=builder --chown=openchamber:openchamber /app/packages/web/bin ./packages/web/bin
-COPY --from=builder --chown=openchamber:openchamber /app/packages/web/server ./packages/web/server
-COPY --from=builder --chown=openchamber:openchamber /app/packages/web/dist ./packages/web/dist
+COPY --from=builder --chown=1000:1000 /app/node_modules ./node_modules
+COPY --from=builder --chown=1000:1000 /app/packages/web/node_modules ./packages/web/node_modules
+COPY --from=builder --chown=1000:1000 /app/package.json ./package.json
+COPY --from=builder --chown=1000:1000 /app/packages/web/package.json ./packages/web/package.json
+COPY --from=builder --chown=1000:1000 /app/packages/web/bin ./packages/web/bin
+COPY --from=builder --chown=1000:1000 /app/packages/web/server ./packages/web/server
+COPY --from=builder --chown=1000:1000 /app/packages/web/dist ./packages/web/dist
 
-COPY --chown=openchamber:openchamber rootfs/ /
+COPY --chown=1000:1000 rootfs/ /
 
 EXPOSE 3000
 

@@ -43,10 +43,10 @@ RUN --mount=type=bind,from=source,source=/src/Cargo.lock,target=/tmp/Cargo.lock 
  && cargo install wasm-bindgen-cli --locked --version "${WASM_BINDGEN_VERSION}" --root /usr/local \
  && rm -rf /tmp/cargo-bootstrap
 
-USER app
+USER 1000
 WORKDIR /app
 
-COPY --from=source --chown=app:app /src .
+COPY --from=source --chown=1000:1000 /src .
 
 RUN --mount=type=cache,target=/app/.cargo/registry,id=cargo-registry-${TARGETARCH},uid=1000,gid=1000 \
     --mount=type=cache,target=/app/target,id=cargo-target-${TARGETARCH},uid=1000,gid=1000 \
@@ -68,17 +68,17 @@ RUN addgroup -g 1000 lldap \
  && adduser -u 1000 -G lldap -D -H -s /sbin/nologin lldap \
  && apk add --no-cache tzdata \
  && mkdir -p /app /data \
- && chown lldap:lldap /data
+ && chown 1000:1000 /data
 
 WORKDIR /app
 
-COPY --from=builder --chown=lldap:lldap /app/app/index_local.html app/index.html
-COPY --from=builder --chown=lldap:lldap /app/app/static app/static
-COPY --from=builder --chown=lldap:lldap /app/app/pkg app/pkg
-COPY --from=builder --chown=lldap:lldap /app/bin/lldap /app/bin/lldap_migration_tool /app/bin/lldap_set_password ./
-COPY --from=source --chown=lldap:lldap /src/lldap_config.docker_template.toml ./
+COPY --from=builder --chown=1000:1000 /app/app/index_local.html app/index.html
+COPY --from=builder --chown=1000:1000 /app/app/static app/static
+COPY --from=builder --chown=1000:1000 /app/app/pkg app/pkg
+COPY --from=builder --chown=1000:1000 /app/bin/lldap /app/bin/lldap_migration_tool /app/bin/lldap_set_password ./
+COPY --from=source --chown=1000:1000 /src/lldap_config.docker_template.toml ./
 
-USER lldap
+USER 1000
 
 ENV LDAP_PORT=3890
 ENV HTTP_PORT=17170

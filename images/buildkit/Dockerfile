@@ -89,7 +89,7 @@ RUN apk add --no-cache \
  && apk del .build-deps \
  && adduser -D -u 1000 -s /sbin/nologin user \
  && mkdir -p /run/user/1000 /home/user/.local/tmp /home/user/.local/share/buildkit \
- && chown -R user /run/user/1000 /home/user \
+ && chown -R 1000:1000 /run/user/1000 /home/user \
  && printf 'user:100000:65536\n' > /etc/subuid \
  && printf 'user:100000:65536\n' > /etc/subgid
 
