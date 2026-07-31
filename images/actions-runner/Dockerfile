@@ -72,11 +72,11 @@ ADD --chown=1001:1001 https://github.com/aquaproj/aqua-registry.git#${AQUA_REGIS
 RUN groupadd --gid 1001 runner \
     && useradd --uid 1001 --gid 1001 --create-home --shell /bin/bash runner \
     && mkdir --parents /home/runner/.local/share/aquaproj-aqua \
-    && chown --recursive runner:runner /home/runner
+    && chown --recursive 1001:1001 /home/runner
 
-COPY --from=runner-source --chown=runner:runner /opt/runner /home/runner/actions-runner
+COPY --from=runner-source --chown=1001:1001 /opt/runner /home/runner/actions-runner
 
-USER runner
+USER 1001
 WORKDIR /home/runner/actions-runner
 
 ENV AQUA_ROOT_DIR=/home/runner/.local/share/aquaproj-aqua \

@@ -1,15 +1,21 @@
 # Trivy CRITICAL ignores for the openchamber image.
 #
 # perl-base/perl-modules CVEs in debian 13 (carried by the runtime base image).
-# Both marked fix_deferred/affected in debian with no
+# All marked fix_deferred/affected in debian with no
 # fix planned in this debian branch. Revisit when the runtime base ships
 # against a newer debian release.
 CVE-2026-42496 exp:2026-08-16
 CVE-2026-8376 exp:2026-08-16
+CVE-2026-13221 exp:2026-08-16  # perl regex trie overflow (no fix in debian 13)
+CVE-2026-57433 exp:2026-08-16  # perl Storable signed integer overflow (no fix in debian 13)
+
+# OS packages carried by the debian trixie runtime base image.
+# Revisit when the runtime base ships against a newer debian release.
+CVE-2026-60002 exp:2026-08-16  # openssh-client < 10.4 (use-after-free); wait for debian 13 backport
 
 # npm packages in the openchamber web vendor bundle. Pinned by upstream's
 # bun.lock; we don't own the upgrade path. Revisit when openchamber upstream
 # bumps the offending package version.
-CVE-2026-41242 exp:2026-07-16  # protobufjs 6.11.6 -> fixed in 7.5.5/8.0.1
-CVE-2026-9277 exp:2026-07-16   # shell-quote 1.8.3 -> fixed in 1.8.4
-CVE-2026-60002 exp:2026-08-16  # openssh-client < 10.4 (use-after-free); wait for debian 13 backport
+CVE-2026-41242 exp:2026-09-30  # protobufjs 6.11.6 -> fixed in 7.5.5/8.0.1
+CVE-2026-9277 exp:2026-09-30   # shell-quote 1.8.3 -> fixed in 1.8.4
+CVE-2026-59873 exp:2026-09-30  # tar < 7.5.19 (DoS via gzip bomb); pinned by upstream bun.lock
