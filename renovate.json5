@@ -1,42 +1,36 @@
 {
-  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: [
-    'config:best-practices',
-  ],
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:best-practices"],
   automerge: true,
-  minimumReleaseAge: '6 hours',
-  'pre-commit': {
+  minimumReleaseAge: "6 hours",
+  "pre-commit": {
     enabled: true,
   },
   customManagers: [
     {
-      customType: 'regex',
-      description: 'Update version ARGs in Dockerfiles',
-      managerFilePatterns: ['/(^|/)Dockerfile$/'],
+      customType: "regex",
+      description: "Update version ARGs in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/"],
       matchStrings: [
-        '#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\n(?:.*\\n)*?ARG\\s+\\w+_VERSION=(?<currentValue>[^\\s]+)',
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\n(?:.*\\n)*?ARG\\s+\\w+_VERSION=(?<currentValue>[^\\s]+)",
       ],
-      versioningTemplate: 'semver-coerced',
+      versioningTemplate: "semver-coerced",
     },
     {
-      customType: 'regex',
-      description: 'Update version ARGs with extractVersion in Dockerfiles',
-      managerFilePatterns: ['/(^|/)Dockerfile$/'],
+      customType: "regex",
+      description: "Update version ARGs with extractVersion in Dockerfiles",
+      managerFilePatterns: ["/(^|/)Dockerfile$/"],
       matchStrings: [
-        '#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\s+extractVersion=(?<extractVersion>[^\\s\\n]+)\\n(?:.*\\n)*?ARG\\s+\\w+_VERSION=(?<currentValue>[^\\s]+)',
+        "#\\s*renovate:\\s*datasource=(?<datasource>[^\\s]+)\\s+depName=(?<depName>[^\\s]+)\\s+extractVersion=(?<extractVersion>[^\\s\\n]+)\\n(?:.*\\n)*?ARG\\s+\\w+_VERSION=(?<currentValue>[^\\s]+)",
       ],
-      versioningTemplate: 'semver-coerced',
+      versioningTemplate: "semver-coerced",
     },
   ],
-  allowPostUpgradeCommandTemplating: true,
   postUpgradeTasks: {
     commands: [
-      'bash .github/scripts/sync-checksums.sh {{{depName}}} {{{newVersion}}}',
+      "bash .github/scripts/sync-checksums.sh {{{depName}}} {{{newVersion}}}",
     ],
-    fileFilters: [
-      'images/**/Dockerfile',
-      'images/**/image.yaml',
-    ],
-    executionMode: 'branch',
+    fileFilters: ["images/**/Dockerfile", "images/**/image.yaml"],
+    executionMode: "branch",
   },
 }
