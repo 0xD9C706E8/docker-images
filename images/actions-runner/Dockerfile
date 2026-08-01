@@ -1,11 +1,11 @@
 # https://github.com/actions/runner
 
 # renovate: datasource=github-releases depName=actions/runner
-ARG ACTIONS_RUNNER_VERSION=v2.335.1
+ARG ACTIONS_RUNNER_VERSION=v2.336.0
 # renovate: datasource=github-releases depName=actions/runner extractVersion=^v(?<version>.+)$
-ARG ACTIONS_RUNNER_PKG_VERSION=2.335.1
+ARG ACTIONS_RUNNER_PKG_VERSION=2.336.0
 ARG ACTIONS_RUNNER_ARCH=x64
-ARG ACTIONS_RUNNER_SHA256=4ef2f25285f0ae4477f1fe1e346db76d2f3ebf03824e2ddd1973a2819bf6c8cf
+ARG ACTIONS_RUNNER_SHA256=04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d
 
 # renovate: datasource=github-releases depName=aquaproj/aqua
 ARG AQUA_VERSION=v2.62.2
@@ -25,19 +25,13 @@ RUN mkdir /opt/runner && tar -xz -f /tmp/runner.tar.gz -C /opt/runner
 
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS aqua-cli
 ARG AQUA_VERSION
+ARG AQUA_SHA256
 ARG TARGETARCH
 
-RUN apk add --no-cache curl tar \
- && case "${TARGETARCH}" in \
-        amd64) AQUA_ARCH=amd64 ;; \
-        arm64) AQUA_ARCH=arm64 ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac \
- && curl --silent --location --fail \
-        --output /tmp/aqua.tar.gz \
-        "https://github.com/aquaproj/aqua/releases/download/${AQUA_VERSION}/aqua_linux_${AQUA_ARCH}.tar.gz" \
- && tar --extract --gzip --file=/tmp/aqua.tar.gz --directory=/tmp aqua \
- && install --mode=0755 /tmp/aqua /usr/local/bin/aqua
+ADD --checksum=sha256:${AQUA_SHA256} --unpack=true \
+    https://github.com/aquaproj/aqua/releases/download/${AQUA_VERSION}/aqua_linux_${TARGETARCH}.tar.gz \
+    /tmp/
+RUN install --mode=0755 /tmp/aqua /usr/local/bin/aqua
 
 FROM debian:13.6-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7ab59f2add76a7bd
 
@@ -46,18 +40,18 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-           ca-certificates \
-           curl \
-           git \
-           jq \
-           libicu76 \
-           liblttng-ust1 \
-           libssl3 \
-           make \
+    ca-certificates \
+    curl \
+    git \
+    jq \
+    libicu76 \
+    liblttng-ust1 \
+    libssl3 \
+    make \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL -o /etc/apt/keyrings/githubcli-archive-keyring.gpg https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-       > /etc/apt/sources.list.d/github-cli.list \
+    > /etc/apt/sources.list.d/github-cli.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends gh \
     && rm -rf /var/lib/apt/lists/*

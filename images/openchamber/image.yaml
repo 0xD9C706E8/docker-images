@@ -2,3 +2,15 @@ upstream: https://github.com/openchamber/openchamber
 base: node (debian)
 description: OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and remote BuildKit client
 license: MIT
+buildArgs:
+  amd64:
+    AQUA_SHA256: 3631bfb239a96eb5f70852308fd97ffcefa0247efd82327a422bca8cb98ad560
+  arm64:
+    AQUA_SHA256: dc6e7ebbe6260c37aaf7f61a3b111db7c6e0eeac14f74f23add07e5437786016
+checksums:
+  - upstream: aquaproj/aqua
+    source: checksums_file
+    checksums_file: aqua_{version}_checksums.txt
+    assets:
+      - pattern: aqua_linux_{arch}.tar.gz
+        arg: AQUA_SHA256
