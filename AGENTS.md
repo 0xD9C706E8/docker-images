@@ -8,7 +8,7 @@ Images publish to `ghcr.io/0xd9c706e8/<app>`. Repo uses git config `0xD9C706E8`;
 These are the rules the repo was built under. Follow them when adding or changing anything.
 
 - **KISS.** Single-purpose Dockerfiles in a monorepo. Validation is "does it build, does it start." No multi-stage complexity unless the app's build system demands it. No VOLUME directives (K8s handles that). Don't over-engineer.
-- **Defaults over explicits.** Only specify what differs from the default. Proof: `.yamllint.yaml` only sets `line-length: 140`, `.hadolint.yaml` only ignores a handful of rules, pre-commit hooks use stock configs. If the default is fine, leave it.
+- **Defaults over explicits.** Only specify what differs from the default. Proof: `.yamllint.yaml` overrides four defaults: `line-length: disable`, `document-start: disable`, `comments.min-spaces-from-content: 1`, `truthy.check-keys: false`; `.hadolint.yaml` only ignores a handful of rules; pre-commit hooks use stock configs. If the default is fine, leave it.
 - **Prefer official sources.** Base images come from the project that owns the software (e.g., `golang:1.23`, not a community repack). Registry is always `ghcr.io` for publishing. The only Docker Hub images allowed are official-library base images.
 - **Always use latest available version.** When adding a new `ARG *_VERSION=`, pin the latest stable release as of that moment. Renovate handles updates from there via the custom regex managers in `renovate.json5`. Never pin to `latest` or a floating tag.
 - **Document before you code.** Before writing a Dockerfile, check the app's release page for: the correct binary name, supported architectures, required build dependencies, and where the binary lands after build. Don't guess at ARG values or COPY paths.
@@ -33,14 +33,7 @@ No tests. Validation is "does it build, does it start". Local Docker without `bu
 
 ## Local tooling
 
-Linters and formatters run via [pre-commit](https://pre-commit.com). One-time setup:
-
-```bash
-brew install pre-commit shfmt yamllint shellcheck
-pre-commit install
-```
-
-After that every `git commit` runs the full check + auto-format suite locally. CI mirrors the same hooks via `pre-commit/action` in `ci.yaml`'s `lint` job, so nothing slips through if a contributor skips the local install.
+Linters and formatters run via [pre-commit](https://pre-commit.com). CI mirrors the same hooks via `pre-commit/action` in `ci.yaml`'s `lint` job.
 
 Configs live at the repo root: `.pre-commit-config.yaml`, `.prettierrc.json`, `.yamllint.yaml`, `.hadolint.yaml`.
 
