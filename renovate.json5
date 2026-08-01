@@ -28,4 +28,15 @@
       versioningTemplate: 'semver-coerced',
     },
   ],
+  allowPostUpgradeCommandTemplating: true,
+  postUpgradeTasks: {
+    commands: [
+      'bash .github/scripts/sync-checksums.sh {{{depName}}} {{{newVersion}}}',
+    ],
+    fileFilters: [
+      'images/**/Dockerfile',
+      'images/**/image.yaml',
+    ],
+    executionMode: 'branch',
+  },
 }

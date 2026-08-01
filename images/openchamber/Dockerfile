@@ -16,19 +16,13 @@ FROM docker:29.7.0-cli@sha256:206ae9cc405101ab0cf97d4b515d21bf6aae961f98f7f9d8de
 
 FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS aqua-cli
 ARG AQUA_VERSION
+ARG AQUA_SHA256
 ARG TARGETARCH
 
-RUN apk add --no-cache curl tar \
- && case "${TARGETARCH}" in \
-        amd64) AQUA_ARCH=amd64 ;; \
-        arm64) AQUA_ARCH=arm64 ;; \
-        *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
-    esac \
- && curl --silent --location --fail \
-        --output /tmp/aqua.tar.gz \
-        "https://github.com/aquaproj/aqua/releases/download/${AQUA_VERSION}/aqua_linux_${AQUA_ARCH}.tar.gz" \
- && tar --extract --gzip --file=/tmp/aqua.tar.gz --directory=/tmp aqua \
- && install --mode=0755 /tmp/aqua /usr/local/bin/aqua
+ADD --checksum=sha256:${AQUA_SHA256} --unpack=true \
+    https://github.com/aquaproj/aqua/releases/download/${AQUA_VERSION}/aqua_linux_${TARGETARCH}.tar.gz \
+    /tmp/
+RUN install --mode=0755 /tmp/aqua /usr/local/bin/aqua
 
 FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS source
 ARG OPENCHAMBER_VERSION
@@ -47,7 +41,7 @@ COPY --from=source /src/packages/mobile/package.json ./packages/mobile/
 COPY --from=source /src/bun-patches ./bun-patches
 
 RUN bun install --frozen-lockfile --ignore-scripts \
- && find /app -type d -name 'app-builder-bin' -prune -exec rm -rf {} +
+    && find /app -type d -name 'app-builder-bin' -prune -exec rm -rf {} +
 
 FROM deps AS builder
 COPY --from=source /src ./
@@ -59,14 +53,14 @@ ARG AQUA_REGISTRY_VERSION
 ARG OPENCODE_AI_VERSION
 
 RUN apt-get update \
- && apt-get install --yes --no-install-recommends \
-        bash \
-        ca-certificates \
-        curl \
-        git \
-        libatomic1 \
-        openssh-client \
- && rm -rf /var/lib/apt/lists/*
+    && apt-get install --yes --no-install-recommends \
+    bash \
+    ca-certificates \
+    curl \
+    git \
+    libatomic1 \
+    openssh-client \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=docker-cli /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=docker-cli /usr/local/libexec/docker/cli-plugins/docker-buildx /usr/local/libexec/docker/cli-plugins/docker-buildx
@@ -77,13 +71,13 @@ COPY --from=aqua-cli /usr/local/bin/aqua /usr/local/bin/aqua
 ADD --chown=1000:1000 https://github.com/aquaproj/aqua-registry.git#${AQUA_REGISTRY_VERSION} /opt/aqua-registry
 
 RUN userdel node \
- && groupadd --gid=1000 openchamber \
- && useradd --uid=1000 --gid=1000 --create-home --shell=/bin/bash openchamber \
- && mkdir --parents /home/openchamber/.npm-global \
-             /home/openchamber/.local/share/aquaproj-aqua \
-             /home/openchamber/.docker \
-             /home/openchamber/.ssh \
- && chown --recursive 1000:1000 /home/openchamber
+    && groupadd --gid=1000 openchamber \
+    && useradd --uid=1000 --gid=1000 --create-home --shell=/bin/bash openchamber \
+    && mkdir --parents /home/openchamber/.npm-global \
+    /home/openchamber/.local/share/aquaproj-aqua \
+    /home/openchamber/.docker \
+    /home/openchamber/.ssh \
+    && chown --recursive 1000:1000 /home/openchamber
 
 USER 1000
 WORKDIR /home/openchamber
@@ -99,7 +93,7 @@ ENV HOME=/home/openchamber \
 RUN aqua install --only-link --all
 
 RUN npm config set prefix /home/openchamber/.npm-global \
- && npm install --global "opencode-ai@${OPENCODE_AI_VERSION}"
+    && npm install --global "opencode-ai@${OPENCODE_AI_VERSION}"
 
 COPY --from=builder --chown=1000:1000 /app/node_modules ./node_modules
 COPY --from=builder --chown=1000:1000 /app/packages/web/node_modules ./packages/web/node_modules
