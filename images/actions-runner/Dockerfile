@@ -1,9 +1,9 @@
 # https://github.com/actions/runner
 
 # renovate: datasource=github-releases depName=actions/runner
-ARG ACTIONS_RUNNER_VERSION=v2.335.1
+ARG ACTIONS_RUNNER_VERSION=v2.336.0
 # renovate: datasource=github-releases depName=actions/runner extractVersion=^v(?<version>.+)$
-ARG ACTIONS_RUNNER_PKG_VERSION=2.335.1
+ARG ACTIONS_RUNNER_PKG_VERSION=2.336.0
 ARG ACTIONS_RUNNER_ARCH=x64
 ARG ACTIONS_RUNNER_SHA256=4ef2f25285f0ae4477f1fe1e346db76d2f3ebf03824e2ddd1973a2819bf6c8cf
 
