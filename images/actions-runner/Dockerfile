@@ -8,7 +8,7 @@ ARG ACTIONS_RUNNER_ARCH=x64
 ARG ACTIONS_RUNNER_SHA256=04cf0be1aff4c3ec3554466c39124ca250e3effd8873bb7e8d68535aa9505d5d
 
 # renovate: datasource=github-releases depName=aquaproj/aqua
-ARG AQUA_VERSION=v2.62.2
+ARG AQUA_VERSION=v2.62.3
 # renovate: datasource=github-releases depName=aquaproj/aqua-registry
 ARG AQUA_REGISTRY_VERSION=v4.547.0
 
