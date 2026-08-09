@@ -4,9 +4,9 @@ description: OpenChamber web UI for OpenCode with aqua-managed CLI toolchain and
 license: MIT
 buildArgs:
   amd64:
-    AQUA_SHA256: 3631bfb239a96eb5f70852308fd97ffcefa0247efd82327a422bca8cb98ad560
+    AQUA_SHA256: 89cb081adb19e425b1dca6b16d912c349a43535ce88d8713050738c9263618d0
   arm64:
-    AQUA_SHA256: dc6e7ebbe6260c37aaf7f61a3b111db7c6e0eeac14f74f23add07e5437786016
+    AQUA_SHA256: a6b485fc465cd9317a2d8421bd145d4364606690fa49840347eca9ec84223fa9
 checksums:
   - upstream: aquaproj/aqua
     source: checksums_file

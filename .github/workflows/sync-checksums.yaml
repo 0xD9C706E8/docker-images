@@ -1,0 +1,105 @@
+name: Sync checksums on Renovate PRs
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-checksums:
+    # Renovate creates branches prefixed renovate/ in this repo. pull_request.branches
+    # filters the BASE branch, not the head, so a head-ref guard is required. The
+    # same-repo guard keeps fork PRs (which may name their branch renovate/...) away
+    # from the commit-back steps.
+    if: startsWith(github.head_ref, 'renovate/') && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect changed version ARGs and sync checksums
+        id: sync
+        shell: bash
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          base="origin/${BASE_REF}"
+          mapfile -t changed_files < <(git diff --name-only "${base}...HEAD" -- images/ | grep -E '/Dockerfile$' || true)
+          if [ "${#changed_files[@]}" -eq 0 ]; then
+            echo "No changed Dockerfiles; nothing to sync"
+            exit 0
+          fi
+
+          declare -A seen
+          for dockerfile in "${changed_files[@]}"; do
+            mapfile -t changed_args < <(git diff "${base}...HEAD" -- "${dockerfile}" | grep -E '^\+ARG [A-Za-z0-9_]+_VERSION=' | sed -E 's/^\+(ARG [A-Za-z0-9_]+_VERSION)=.*/\1/' | sort -u || true)
+            for arg in "${changed_args[@]}"; do
+              depname="$(awk -v target="${arg}=" '
+                /^# renovate:/ { ann=$0; next }
+                { if (ann != "" && index($0, target) == 1) {
+                    if (match(ann, /depName=[^[:space:]]+/)) print substr(ann, RSTART + 8, RLENGTH - 8)
+                    exit
+                  }
+                  ann = ""
+                }
+              ' "${dockerfile}")"
+              [ -n "${depname}" ] || continue
+              value="$(grep -E "^${arg}=" "${dockerfile}" | head -1 | cut -d= -f2-)"
+              # One dep can drive several ARGs (e.g. actions/runner version + pkg
+              # version); prefer the v-prefixed tag so `gh release view` resolves it.
+              if [ -n "${seen[${depname}]:-}" ]; then
+                [[ "${seen[${depname}]}" == v* ]] && continue
+                [[ "${value}" != v* ]] && continue
+              fi
+              seen["${depname}"]="${value}"
+            done
+          done
+
+          if [ "${#seen[@]}" -eq 0 ]; then
+            echo "No version ARG changes; nothing to sync"
+            exit 0
+          fi
+
+          for dep in "${!seen[@]}"; do
+            version="${seen[${dep}]}"
+            if grep -qE "^[[:space:]]*- upstream: ${dep}$" images/*/image.yaml 2>/dev/null; then
+              echo "Syncing checksums for ${dep} @ ${version}"
+              bash .github/scripts/sync-checksums.sh "${dep}" "${version}"
+            else
+              echo "No checksums config for ${dep}; skipping"
+            fi
+          done
+
+          # Only commit-back steps touch the write credential; keep no-op runs read-only.
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "checksummed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "checksummed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Load deploy key
+        if: steps.sync.outputs.checksummed == 'true'
+        uses: webfactory/ssh-agent@e83874834305fe9a4a2997156cb26c5de65a8555 # v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.RENOVATE_SYNC_DEPLOY_KEY }}
+
+      - name: Commit and push checksum changes
+        if: steps.sync.outputs.checksummed == 'true'
+        shell: bash
+        env:
+          BRANCH: ${{ github.head_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images/
+          git commit -m "chore(deps): sync checksums for renovate update"
+          # Push as the deploy key, not GITHUB_TOKEN: a GITHUB_TOKEN push does not re-trigger CI.
+          git push "git@github.com:${GITHUB_REPOSITORY}.git" "HEAD:${BRANCH}"
