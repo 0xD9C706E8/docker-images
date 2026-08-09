@@ -12,7 +12,7 @@ ARG AQUA_REGISTRY_VERSION=v4.547.0
 # renovate: datasource=npm depName=opencode-ai
 ARG OPENCODE_AI_VERSION=1.18.11
 
-FROM docker:29.7.0-cli@sha256:206ae9cc405101ab0cf97d4b515d21bf6aae961f98f7f9d8de6c111718fef335 AS docker-cli
+FROM docker:29.7.1-cli@sha256:27a51d5ab1cd38d9eeaba7b415b8c07bc10c31e1cf1ec8d78f6413fcfab3f44f AS docker-cli
 
 FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS aqua-cli
 ARG AQUA_VERSION
