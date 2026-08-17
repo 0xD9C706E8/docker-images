@@ -3,7 +3,7 @@
 # renovate: datasource=github-releases depName=0xERR0R/blocky
 ARG BLOCKY_VERSION=v0.34.0
 
-FROM golang:1.26.6-alpine@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df AS builder
+FROM golang:1.26.6-alpine@sha256:3889b425f035be855a72fb4755265311293b6d414521f0a519d819df32222d83 AS builder
 ARG BLOCKY_VERSION
 ARG TARGETOS
 ENV CGO_ENABLED=0 GOOS=${TARGETOS}

@@ -9,7 +9,7 @@ ARG RUNC_VERSION=v1.5.1
 # renovate: datasource=github-releases depName=rootless-containers/rootlesskit
 ARG ROOTLESSKIT_VERSION=v3.1.0
 
-FROM golang:1.26.6-alpine@sha256:af8d6740070b8906d12eae1c3e3ea0957fb63f492051ea05e354c38ef9fe88df AS gobuild-base
+FROM golang:1.26.6-alpine@sha256:3889b425f035be855a72fb4755265311293b6d414521f0a519d819df32222d83 AS gobuild-base
 RUN apk add --no-cache musl-dev
 
 FROM gobuild-base AS runc
