@@ -1,7 +1,7 @@
 # https://github.com/pocket-id/pocket-id
 
 # renovate: datasource=github-releases depName=pocket-id/pocket-id
-ARG POCKET_ID_VERSION=v2.13.0
+ARG POCKET_ID_VERSION=v2.14.0
 
 FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS source
 ARG POCKET_ID_VERSION
