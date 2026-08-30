@@ -1,0 +1,4 @@
+upstream: https://github.com/firefly-iii/firefly-iii
+base: alpine
+description: Firefly III personal finance manager (PHP-FPM)
+license: AGPL-3.0-or-later
