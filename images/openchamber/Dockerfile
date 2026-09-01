@@ -7,7 +7,7 @@ ARG OPENCHAMBER_VERSION=v1.18.4
 ARG AQUA_VERSION=v2.62.3
 
 # renovate: datasource=github-releases depName=aquaproj/aqua-registry
-ARG AQUA_REGISTRY_VERSION=v4.551.0
+ARG AQUA_REGISTRY_VERSION=v4.558.1
 
 # renovate: datasource=npm depName=opencode-ai
 ARG OPENCODE_AI_VERSION=1.18.17
