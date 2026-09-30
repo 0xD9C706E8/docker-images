@@ -23,7 +23,7 @@ ADD --checksum=sha256:${ACTIONS_RUNNER_SHA256} \
     /tmp/runner.tar.gz
 RUN mkdir /opt/runner && tar -xz -f /tmp/runner.tar.gz -C /opt/runner
 
-FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS aqua-cli
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS aqua-cli
 ARG AQUA_VERSION
 ARG AQUA_SHA256
 ARG TARGETARCH
