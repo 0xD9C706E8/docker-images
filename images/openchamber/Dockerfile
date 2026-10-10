@@ -24,12 +24,12 @@ ADD --checksum=sha256:${AQUA_SHA256} --unpack=true \
     /tmp/
 RUN install --mode=0755 /tmp/aqua /usr/local/bin/aqua
 
-FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS source
+FROM oven/bun:1.4.3-slim@sha256:14a223fa35747ec728bce300ef85888bc5f7958164d15bbba6a54b22b52a3288 AS source
 ARG OPENCHAMBER_VERSION
 
 ADD https://github.com/openchamber/openchamber.git#${OPENCHAMBER_VERSION} /src
 
-FROM oven/bun:1.3.14-slim@sha256:d56a2534ffd262e92c12fd3249d3924d296d97086da773f821d7d0477435ea04 AS deps
+FROM oven/bun:1.4.3-slim@sha256:14a223fa35747ec728bce300ef85888bc5f7958164d15bbba6a54b22b52a3288 AS deps
 WORKDIR /app
 
 COPY --from=source /src/package.json /src/bun.lock ./
