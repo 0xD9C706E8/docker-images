@@ -1,0 +1,4 @@
+upstream: https://github.com/nginx/nginx
+base: alpine
+description: Nginx reverse proxy and web server
+license: BSD-2-Clause

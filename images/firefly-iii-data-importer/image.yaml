@@ -1,0 +1,4 @@
+upstream: https://github.com/firefly-iii/data-importer
+base: alpine
+description: Firefly III data importer (PHP-FPM)
+license: AGPL-3.0-or-later
